@@ -1,4 +1,5 @@
 const leagueId = '1389344338340761600';
+window.DCC_LEAGUE_ID = leagueId;
 const rosters = document.querySelector('#rosters');
 const franchiseGrid = document.querySelector('#franchise-grid');
 const rankingList = document.querySelector('#ranking-list');
@@ -7,122 +8,26 @@ const teamsSubtitle = document.querySelector('#teams-subtitle');
 const syncStatus = document.querySelector('#sync-status');
 const refresh = document.querySelector('#refresh');
 const franchiseTemplate = document.querySelector('#franchise-template');
-
-// Teams V2 presentation layer. Kept separate so the existing production stylesheet stays untouched.
-const teamsV2 = document.createElement('link');
-teamsV2.rel = 'stylesheet'; teamsV2.href = '/teams-v2.css'; document.head.append(teamsV2);
-
-const TEAM_ORDER = ['shwaf','BillClintonArkansas','stuffy229','Simasko','1riggy1','jackig','karasouel','Moosinator','James1836','TUTO'];
-const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
-const initials = name => String(name || 'DCC').split(/\s+/).filter(Boolean).slice(0,2).map(x => x[0]).join('').toUpperCase();
-const playerImage = player => player?.id ? `https://sleepercdn.com/content/nfl/players/thumb/${encodeURIComponent(player.id)}.jpg` : '';
-const avatarImage = avatar => avatar ? `https://sleepercdn.com/avatars/${encodeURIComponent(avatar)}` : '';
-let avatarsByUsername = {};
-let verifiedScoringThroughWeek = null;
-
-async function loadSleeperAvatars(){
-  try {
-    const response = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`, {cache:'no-store'});
-    if(!response.ok) return;
-    const users = await response.json();
-    avatarsByUsername = Object.fromEntries(users.map(user => [user.username, user.avatar || null]));
-  } catch { avatarsByUsername = {}; }
-}
-async function loadVerifiedSeasonScoring(){
-  try {
-    const stateResponse = await fetch('https://api.sleeper.app/v1/state/nfl', {cache:'no-store'});
-    if(!stateResponse.ok) return null;
-    const state = await stateResponse.json();
-    const currentWeek = Number(state.week);
-    if(!Number.isInteger(currentWeek) || currentWeek < 1) return null;
-
-    // Never publish an in-progress week. Start with the previous NFL week and
-    // walk backward until DCC finds a fully reconciled season total.
-    for(let throughWeek = Math.max(1, currentWeek - 1); throughWeek >= 1; throughWeek -= 1){
-      const response = await fetch(`/api/league/${leagueId}/season-scoring/${throughWeek}`, {cache:'no-store'});
-      const data = await response.json();
-      if(response.ok && data.status === 'verified' && data.complete){
-        verifiedScoringThroughWeek = throughWeek;
-        return data;
-      }
-    }
-    return null;
-  } catch { return null; }
-}
-function applyVerifiedSeasonScoring(teams, scoring){
-  if(!scoring?.players) return teams;
-  return teams.map(team => ({
-    ...team,
-    starters:(team.starters || []).map(player => ({...player, seasonPoints:scoring.players[String(player.id)]?.points})),
-    bench:(team.bench || []).map(player => ({...player, seasonPoints:scoring.players[String(player.id)]?.points}))
-  }));
-}
-function canonicalTeams(teams){
-  return [...teams].sort((a,b)=>{
-    const ai=TEAM_ORDER.indexOf(a.username), bi=TEAM_ORDER.indexOf(b.username);
-    return (ai<0?999:ai)-(bi<0?999:bi) || a.team.localeCompare(b.team);
-  });
-}
-function teamLogoMarkup(team){
-  const image=avatarImage(avatarsByUsername[team.username]);
-  return image ? `<img src="${image}" alt="" loading="lazy" onerror="this.remove();this.parentElement.textContent='${esc(initials(team.team))}'">` : esc(initials(team.team));
-}
-function allTeamPlayers(team){
-  return [...(team.starters || []), ...(team.bench || [])];
-}
-function featuredPlayers(team){
-  const players = allTeamPlayers(team);
-  const withSeasonPoints = players.filter(player => Number.isFinite(Number(player.seasonPoints)));
-  if (withSeasonPoints.length) {
-    return { title:'Top 5 Fantasy Scorers', mode:'scoring', players:withSeasonPoints.sort((a,b)=>Number(b.seasonPoints)-Number(a.seasonPoints)).slice(0,5) };
-  }
-  const starters = team.starters?.length ? team.starters : players;
-  return { title:'Players to Watch', mode:'watch', players:starters.slice(0,5) };
-}
-
-function playerRow(player) {
-  const row = document.createElement('li'); row.className = 'player player--visual'; const image = playerImage(player);
-  row.innerHTML = `<div class="player-photo">${image ? `<img src="${image}" alt="" loading="lazy">` : `<span>${esc(player.position || '—')}</span>`}</div><span class="position">${esc(player.position || '—')}</span><span class="player-name">${esc(player.name)}</span><span class="nfl-team">${esc(player.nflTeam || 'FA')}</span>`;
-  const img = row.querySelector('img'); if (img) img.addEventListener('error', () => { img.parentElement.innerHTML = `<span>${esc(player.position || '—')}</span>`; }, { once:true }); return row;
-}
-function lineupGroup(title, players, note = '') {
-  const details = document.createElement('details'); details.className = 'roster-group'; details.open = title === 'Starters';
-  const summary = document.createElement('summary'); summary.innerHTML = `<span>${esc(title)}</span><small>${players.length} players${note ? ` · ${esc(note)}` : ''}</small><b aria-hidden="true">+</b>`;
-  const list = document.createElement('ul'); list.className = 'player-list';
-  if (players.length) players.forEach(player => list.append(playerRow(player))); else list.innerHTML = '<li class="empty">Sleeper has not recorded players in this group.</li>';
-  details.append(summary, list); return details;
-}
-function renderTeam(team, index) {
-  const details = document.createElement('details'); details.className = 'team-accordion'; details.dataset.teamIndex = index;
-  const summary = document.createElement('summary'); summary.className = 'team-accordion__summary';
-  summary.innerHTML = `<div class="team-logo" aria-hidden="true">${teamLogoMarkup(team)}</div><div class="team-accordion__identity"><span class="team-accordion__eyebrow">FRANCHISE ${String(index + 1).padStart(2,'0')}</span><strong>${esc(team.team)}</strong><small>${esc(team.manager)}</small></div><div class="team-accordion__meta"><span>${team.rosterSize} PLAYERS</span><span class="live-dot">LIVE</span><b class="accordion-chevron" aria-hidden="true">⌄</b></div>`;
-  const body = document.createElement('div'); body.className = 'team-accordion__body';
-  const featured = featuredPlayers(team);
-  const featureModule = document.createElement('section'); featureModule.className = 'featured-module';
-  featureModule.innerHTML = `<div class="featured-module__heading"><div><span class="team-accordion__eyebrow">TEAM SPOTLIGHT</span><h4>${esc(featured.title)}</h4></div><small>${featured.mode === 'scoring' && verifiedScoringThroughWeek ? `Verified through Week ${verifiedScoringThroughWeek} · DCC league scoring` : 'Verified scoring unavailable'}</small></div><div class="featured-players">${featured.players.map((player,i) => `<article class="featured-player"><div class="featured-player__rank">${featured.mode === 'scoring' ? `#${i+1}` : 'WATCH'}</div><div class="featured-player__photo">${playerImage(player) ? `<img src="${playerImage(player)}" alt="${esc(player.name)}" loading="lazy">` : `<span>${esc(player.position)}</span>`}</div><div class="featured-player__info"><small>${esc(player.position)} · ${esc(player.nflTeam || 'FA')}</small><strong>${esc(player.name)}</strong>${featured.mode === 'scoring' ? `<b>${Number(player.seasonPoints).toFixed(1)} PTS</b>` : ''}</div></article>`).join('')}</div>`;
-  featureModule.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.parentElement.innerHTML = '<span>PLAYER</span>'; }, { once:true }));
-  const groups = document.createElement('div'); groups.className = 'roster-groups'; groups.append(lineupGroup('Starters', team.starters || [], team.startersSubmitted ? '' : 'No lineup submitted'), lineupGroup('Bench', team.bench || []));
-  body.append(featureModule, groups); details.append(summary, body);
-  details.addEventListener('toggle', () => { if (!details.open) return; document.querySelectorAll('.team-accordion[open]').forEach(other => { if (other !== details) other.open = false; }); }); return details;
-}
-function renderFranchise(team, index) {
-  const node = franchiseTemplate.content.cloneNode(true); node.querySelector('.franchise-card__number').textContent = String(index + 1).padStart(2, '0'); node.querySelector('h3').textContent = team.team; node.querySelector('.manager').textContent = team.manager;
-  const players = team.starters.slice(0, 3).map(player => player.name); node.querySelector('.franchise-card__players').textContent = players.length ? players.join(' · ') : `${team.rosterSize} players on roster`; return node;
-}
-function renderUnrankedTeams(teams) { rankingList.replaceChildren(...teams.map((team, index) => { const item = document.createElement('li'); item.innerHTML = `<span>${String(index + 1).padStart(2, '0')}</span><strong>${esc(team.team)}</strong><small>UNRANKED</small>`; return item; })); }
-function updatePulse(data) { const teams = data.teams || []; const players = teams.reduce((total, team) => total + team.rosterSize, 0); const lineups = teams.filter(team => team.startersSubmitted).length; document.querySelector('#league-name').textContent = data.league.name || 'Dynasty League'; document.querySelector('#league-season').textContent = `${data.league.season || 'Current'} season · Sleeper`; document.querySelector('#team-count').textContent = teams.length; document.querySelector('#player-count').textContent = players; document.querySelector('#lineup-count').textContent = `${lineups}/${teams.length}`; }
-function setActiveNavigation() { const links = [...document.querySelectorAll('.primary-nav a')]; const sections = links.map(link => document.querySelector(link.getAttribute('href'))).filter(Boolean); const update = () => { const current = sections.reduce((closest, section) => Math.abs(section.getBoundingClientRect().top - 120) < Math.abs(closest.getBoundingClientRect().top - 120) ? section : closest, sections[0]); links.forEach(link => link.classList.toggle('is-active', link.getAttribute('href') === `#${current.id}`)); }; addEventListener('scroll', update, { passive:true }); update(); }
-async function loadRosters() {
-  refresh.disabled = true; error.hidden = true;
-  try {
-    verifiedScoringThroughWeek = null;
-    const [response, scoring] = await Promise.all([
-      fetch(`/api/league/${leagueId}/roster-center`, { cache:'no-store' }),
-      loadVerifiedSeasonScoring(),
-      loadSleeperAvatars()
-    ]);
-    const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Sleeper data could not be loaded.');
-    const teams = canonicalTeams(applyVerifiedSeasonScoring(data.teams || [], scoring)); teamsSubtitle.textContent = `${data.league.name || 'League'} · ${data.league.season || 'Current season'} · ${teams.length} teams`; syncStatus.textContent = `Synced ${new Date(data.syncedAt).toLocaleString()}`; updatePulse({...data,teams}); franchiseGrid.replaceChildren(...teams.map(renderFranchise)); renderUnrankedTeams(teams); rosters.replaceChildren(...teams.map(renderTeam));
-  } catch (cause) { error.textContent = `Live roster data is temporarily unavailable: ${cause.message}`; error.hidden = false; syncStatus.textContent = 'Live roster data unavailable'; } finally { refresh.disabled = false; }
-}
-refresh.addEventListener('click', loadRosters); setActiveNavigation(); loadRosters();
+const teamsV2 = document.createElement('link'); teamsV2.rel='stylesheet'; teamsV2.href='/teams-v2.css'; document.head.append(teamsV2);
+const TEAM_ORDER=['shwaf','BillClintonArkansas','stuffy229','Simasko','1riggy1','jackig','karasouel','Moosinator','James1836','TUTO'];
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const initials=name=>String(name||'DCC').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+const playerImage=player=>player?.id?`https://sleepercdn.com/content/nfl/players/thumb/${encodeURIComponent(player.id)}.jpg`:'';
+const avatarImage=avatar=>avatar?`https://sleepercdn.com/avatars/${encodeURIComponent(avatar)}`:'';
+let avatarsByUsername={}; let verifiedScoringThroughWeek=null;
+async function loadSleeperAvatars(){try{const r=await fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`,{cache:'no-store'});if(!r.ok)return;const users=await r.json();avatarsByUsername=Object.fromEntries(users.map(u=>[u.username,u.avatar||null]));}catch{avatarsByUsername={};}}
+async function loadVerifiedSeasonScoring(){try{const r=await fetch('https://api.sleeper.app/v1/state/nfl',{cache:'no-store'});if(!r.ok)return null;const state=await r.json();const currentWeek=Number(state.week);if(!Number.isInteger(currentWeek)||currentWeek<1)return null;for(let week=Math.max(1,currentWeek-1);week>=1;week--){const sr=await fetch(`/api/league/${leagueId}/season-scoring/${week}`,{cache:'no-store'});const data=await sr.json();if(sr.ok&&data.status==='verified'&&data.complete){verifiedScoringThroughWeek=week;return data;}}return null;}catch{return null;}}
+function applyVerifiedSeasonScoring(teams,scoring){if(!scoring?.players)return teams;return teams.map(team=>({...team,starters:(team.starters||[]).map(p=>({...p,seasonPoints:scoring.players[String(p.id)]?.points})),bench:(team.bench||[]).map(p=>({...p,seasonPoints:scoring.players[String(p.id)]?.points}))}));}
+function canonicalTeams(teams){return[...teams].sort((a,b)=>{const ai=TEAM_ORDER.indexOf(a.username),bi=TEAM_ORDER.indexOf(b.username);return(ai<0?999:ai)-(bi<0?999:bi)||a.team.localeCompare(b.team);});}
+function teamLogoMarkup(team){const image=avatarImage(avatarsByUsername[team.username]);return image?`<img src="${image}" alt="" loading="lazy" onerror="this.remove();this.parentElement.textContent='${esc(initials(team.team))}'">`:esc(initials(team.team));}
+function allTeamPlayers(team){return[...(team.starters||[]),...(team.bench||[])];}
+function featuredPlayers(team){const players=allTeamPlayers(team),scored=players.filter(p=>Number.isFinite(Number(p.seasonPoints)));if(scored.length)return{title:'Top 5 Fantasy Scorers',mode:'scoring',players:scored.sort((a,b)=>Number(b.seasonPoints)-Number(a.seasonPoints)).slice(0,5)};const starters=team.starters?.length?team.starters:players;return{title:'Players to Watch',mode:'watch',players:starters.slice(0,5)};}
+function playerRow(player){const row=document.createElement('li');row.className='player player--visual';const image=playerImage(player);row.innerHTML=`<div class="player-photo">${image?`<img src="${image}" alt="" loading="lazy">`:`<span>${esc(player.position||'—')}</span>`}</div><span class="position">${esc(player.position||'—')}</span><span class="player-name">${esc(player.name)}</span><span class="nfl-team">${esc(player.nflTeam||'FA')}</span>`;const img=row.querySelector('img');if(img)img.addEventListener('error',()=>{img.parentElement.innerHTML=`<span>${esc(player.position||'—')}</span>`;},{once:true});return row;}
+function lineupGroup(title,players,note=''){const details=document.createElement('details');details.className='roster-group';details.open=title==='Starters';const summary=document.createElement('summary');summary.innerHTML=`<span>${esc(title)}</span><small>${players.length} players${note?` · ${esc(note)}`:''}</small><b aria-hidden="true">+</b>`;const list=document.createElement('ul');list.className='player-list';if(players.length)players.forEach(p=>list.append(playerRow(p)));else list.innerHTML='<li class="empty">Sleeper has not recorded players in this group.</li>';details.append(summary,list);return details;}
+function renderTeam(team,index){const details=document.createElement('details');details.className='team-accordion';details.dataset.teamIndex=index;const summary=document.createElement('summary');summary.className='team-accordion__summary';summary.innerHTML=`<div class="team-logo" aria-hidden="true">${teamLogoMarkup(team)}</div><div class="team-accordion__identity"><span class="team-accordion__eyebrow">FRANCHISE ${String(index+1).padStart(2,'0')}</span><strong>${esc(team.team)}</strong><small>${esc(team.manager)}</small></div><div class="team-accordion__meta"><span>${team.rosterSize} PLAYERS</span><span class="live-dot">LIVE</span><b class="accordion-chevron" aria-hidden="true">⌄</b></div>`;const body=document.createElement('div');body.className='team-accordion__body';const featured=featuredPlayers(team);const featureModule=document.createElement('section');featureModule.className='featured-module';featureModule.innerHTML=`<div class="featured-module__heading"><div><span class="team-accordion__eyebrow">TEAM SPOTLIGHT</span><h4>${esc(featured.title)}</h4></div><small>${featured.mode==='scoring'&&verifiedScoringThroughWeek?`Verified through Week ${verifiedScoringThroughWeek} · DCC league scoring`:'Verified scoring unavailable'}</small></div><div class="featured-players">${featured.players.map((p,i)=>`<article class="featured-player"><div class="featured-player__rank">${featured.mode==='scoring'?`#${i+1}`:'WATCH'}</div><div class="featured-player__photo">${playerImage(p)?`<img src="${playerImage(p)}" alt="${esc(p.name)}" loading="lazy">`:`<span>${esc(p.position)}</span>`}</div><div class="featured-player__info"><small>${esc(p.position)} · ${esc(p.nflTeam||'FA')}</small><strong>${esc(p.name)}</strong>${featured.mode==='scoring'?`<b>${Number(p.seasonPoints).toFixed(1)} PTS</b>`:''}</div></article>`).join('')}</div>`;featureModule.querySelectorAll('img').forEach(img=>img.addEventListener('error',()=>{img.parentElement.innerHTML='<span>PLAYER</span>';},{once:true}));const groups=document.createElement('div');groups.className='roster-groups';groups.append(lineupGroup('Starters',team.starters||[],team.startersSubmitted?'':'No lineup submitted'),lineupGroup('Bench',team.bench||[]));body.append(featureModule);if(window.DCCTeamIntelligence)body.append(window.DCCTeamIntelligence.panel(team));body.append(groups);details.append(summary,body);details.addEventListener('toggle',()=>{if(!details.open)return;document.querySelectorAll('.team-accordion[open]').forEach(other=>{if(other!==details)other.open=false;});});return details;}
+function renderFranchise(team,index){const node=franchiseTemplate.content.cloneNode(true);node.querySelector('.franchise-card__number').textContent=String(index+1).padStart(2,'0');node.querySelector('h3').textContent=team.team;node.querySelector('.manager').textContent=team.manager;const players=team.starters.slice(0,3).map(p=>p.name);node.querySelector('.franchise-card__players').textContent=players.length?players.join(' · '):`${team.rosterSize} players on roster`;return node;}
+function renderUnrankedTeams(teams){rankingList.replaceChildren(...teams.map((team,index)=>{const item=document.createElement('li');item.innerHTML=`<span>${String(index+1).padStart(2,'0')}</span><strong>${esc(team.team)}</strong><small>UNRANKED</small>`;return item;}));}
+function updatePulse(data){const teams=data.teams||[],players=teams.reduce((t,team)=>t+team.rosterSize,0),lineups=teams.filter(team=>team.startersSubmitted).length;document.querySelector('#league-name').textContent=data.league.name||'Dynasty League';document.querySelector('#league-season').textContent=`${data.league.season||'Current'} season · Sleeper`;document.querySelector('#team-count').textContent=teams.length;document.querySelector('#player-count').textContent=players;document.querySelector('#lineup-count').textContent=`${lineups}/${teams.length}`;}
+function setActiveNavigation(){const links=[...document.querySelectorAll('.primary-nav a')],sections=links.map(link=>document.querySelector(link.getAttribute('href'))).filter(Boolean);const update=()=>{const current=sections.reduce((closest,section)=>Math.abs(section.getBoundingClientRect().top-120)<Math.abs(closest.getBoundingClientRect().top-120)?section:closest,sections[0]);links.forEach(link=>link.classList.toggle('is-active',link.getAttribute('href')===`#${current.id}`));};addEventListener('scroll',update,{passive:true});update();}
+async function loadRosters(){refresh.disabled=true;error.hidden=true;try{verifiedScoringThroughWeek=null;const[response,scoring]=await Promise.all([fetch(`/api/league/${leagueId}/roster-center`,{cache:'no-store'}),loadVerifiedSeasonScoring(),loadSleeperAvatars()]);const data=await response.json();if(!response.ok)throw new Error(data.error||'Sleeper data could not be loaded.');const teams=canonicalTeams(applyVerifiedSeasonScoring(data.teams||[],scoring));if(window.DCCTeamIntelligence&&verifiedScoringThroughWeek)await window.DCCTeamIntelligence.load(verifiedScoringThroughWeek);teamsSubtitle.textContent=`${data.league.name||'League'} · ${data.league.season||'Current season'} · ${teams.length} teams`;syncStatus.textContent=`Synced ${new Date(data.syncedAt).toLocaleString()}`;updatePulse({...data,teams});franchiseGrid.replaceChildren(...teams.map(renderFranchise));renderUnrankedTeams(teams);rosters.replaceChildren(...teams.map(renderTeam));}catch(cause){error.textContent=`Live roster data is temporarily unavailable: ${cause.message}`;error.hidden=false;syncStatus.textContent='Live roster data unavailable';}finally{refresh.disabled=false;}}
+refresh.addEventListener('click',loadRosters);setActiveNavigation();loadRosters();
