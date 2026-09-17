@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { ingestProviderSnapshots } from '../lib/provider-ingestion.js';
+const rows=[{playerId:'1',value:100},{playerId:'2',value:80},{playerId:'3',value:60}];
+const ktc={source:'keeptradecut',asOf:'2026-09-18',format:'superflex',players:rows};
+const sameFamily={source:'keeptradecut',asOf:'2026-09-18',format:'superflex',players:rows};
+const oneFamily=ingestProviderSnapshots({snapshots:[ktc,sameFamily]});
+assert.equal(oneFamily.publicationEligible,false);
+assert.equal(oneFamily.status,'insufficient-independent-sources');
+const fantasycalc={source:'fantasycalc',asOf:'2026-09-18',format:'superflex',players:[{playerId:'2',value:100},{playerId:'1',value:80},{playerId:'3',value:60}]};
+const ready=ingestProviderSnapshots({snapshots:[ktc,fantasycalc]});
+assert.equal(ready.publicationEligible,true);
+assert.equal(ready.independentSourceCount,2);
+assert.equal(ready.consensus.provenance.rawValuesAveraged,false);
+assert.equal(ready.disagreement.provenance.sourceWinnerDeclared,false);
+const bad=ingestProviderSnapshots({snapshots:[ktc,{source:'mystery',asOf:'2026-09-18',players:rows}]});
+assert.equal(bad.publicationEligible,false);
+assert.equal(bad.rejected[0].errors[0],'unregistered-provider');
+console.log(JSON.stringify({oneFamily:oneFamily.status,ready:ready.status,independentSources:ready.independentSourceCount,rejectedUnknown:bad.rejected},null,2));
