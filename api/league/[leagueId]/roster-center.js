@@ -1,9 +1,8 @@
 import { Readable } from 'node:stream';
-import { route } from '../server.js';
+import { route } from '../../../server.js';
 
-// The Node.js runtime for Vercel Functions uses the Web Handler interface.
-// This adapter preserves the existing router while giving Vercel the expected
-// `fetch(Request)` export.
+// Explicit filesystem route for Vercel's Node.js runtime. The existing router
+// remains the implementation source; this adapter supplies its Web Handler.
 function toNodeRequest(request) {
   const url = new URL(request.url);
   const body = request.body ? Readable.fromWeb(request.body) : Readable.from([]);
