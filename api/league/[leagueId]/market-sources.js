@@ -1,8 +1,8 @@
-import {fetchLiveMarketSnapshots} from '../../../../lib/providers/live-market-sources.js';
+import {fetchLiveMarketSnapshots} from '../../../lib/providers/live-market-sources.js';
 const json=(data,status=200)=>new Response(JSON.stringify(data,null,2),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
 export default {async fetch(request){try{const url=new URL(request.url),parts=url.pathname.split('/').filter(Boolean),i=parts.indexOf('league'),leagueId=i>=0?parts[i+1]:null;if(!leagueId)return json({status:'error',message:'leagueId required'},400);
  const leagueResponse=await fetch(`https://api.sleeper.app/v1/league/${leagueId}`);if(!leagueResponse.ok)return json({status:'error',message:`Sleeper league request failed: ${leagueResponse.status}`},502);const league=await leagueResponse.json();
  const rosterPositions=league.roster_positions||[],starterCount=rosterPositions.filter(x=>!['BN','IR','TAXI'].includes(String(x).toUpperCase())).length;
  const numTeams=Number(league.total_rosters||10),ppr=Number(league.scoring_settings?.rec||0),numQbs=rosterPositions.some(x=>['SUPER_FLEX','SUPERFLEX','OP'].includes(String(x).toUpperCase()))?2:1;
- const result=await fetchLiveMarketSnapshots({numTeams,ppr,numQbs});return json({leagueId,leagueName:league.name||null,requestedFormat:{numTeams,ppr,numQbs,starterCount},...result, snapshots:result.snapshots.map(s=>({source:s.source,asOf:s.asOf,format:s.format,playerCount:s.players.length,provenance:s.provenance||s.metadata||null}))});
+ const result=await fetchLiveMarketSnapshots({numTeams,ppr,numQbs});return json({leagueId,leagueName:league.name||null,requestedFormat:{numTeams,ppr,numQbs,starterCount},...result,snapshots:result.snapshots.map(s=>({source:s.source,asOf:s.asOf,format:s.format,playerCount:s.players.length,provenance:s.provenance||s.metadata||null}))});
 }catch(e){return json({status:'error',message:e instanceof Error?e.message:String(e)},500);}}};
