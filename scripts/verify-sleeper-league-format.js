@@ -1,0 +1,5 @@
+import assert from'node:assert/strict';import{deriveSleeperLineupSettings}from'../lib/sleeper-league-format.js';
+const dcc=deriveSleeperLineupSettings(['QB','RB','RB','WR','WR','TE','FLEX','FLEX','SUPER_FLEX',...Array(16).fill('BN')]);assert.equal(dcc.status,'ready');assert.deepEqual(dcc.settings,{QB:1,RB:2,WR:2,TE:1,FLEX:2,SUPERFLEX:1});assert.equal(dcc.bench.BN,16);assert.equal(dcc.supportedStartingSlots,9);assert.equal(dcc.totalRosterSlots,25);
+const portable=deriveSleeperLineupSettings(['QB','RB','RB','WR','WR','WR','TE','WRT','OP','BN','BN','IR','TAXI']);assert.equal(portable.status,'ready');assert.equal(portable.settings.FLEX,1);assert.equal(portable.settings.SUPERFLEX,1);assert.equal(portable.bench.IR,1);assert.equal(portable.bench.TAXI,1);
+const unsupported=deriveSleeperLineupSettings(['QB','RB','WR','TE','K','DEF','BN']);assert.equal(unsupported.status,'partial');assert.deepEqual(unsupported.unsupported,{K:1,DEF:1});assert.equal(unsupported.unsupportedStartingSlots,2);
+console.log(JSON.stringify({dcc,portable,unsupported},null,2));
