@@ -456,6 +456,60 @@ async function leagueBundle(id) {
   return {league,rosters,users,syncedAt:new Date().toISOString()};
 }
 
+// This is intentionally a presentation-shaped endpoint rather than an analytics
+// endpoint.  Starter flags come directly from Sleeper's roster `starters` field;
+// when no lineup has been submitted (common before the season), that uncertainty
+// is surfaced instead of substituting an optimized projected lineup.
+function rosterCenter(bundle, players) {
+  const usersById = Object.fromEntries(bundle.users.map(user => [user.user_id, user]));
+  const playerView = (playerId, starterIds, starterOrder) => {
+    const player = players[playerId];
+    if (!player) return { id: String(playerId), name: `Unknown player (${playerId})`, position: '—', nflTeam: '—', starter: starterIds.has(String(playerId)) };
+    return {
+      id: String(playerId),
+      name: pname(player) || `Unknown player (${playerId})`,
+      position: player.fantasy_positions?.[0] || player.position || '—',
+      nflTeam: player.team || '—',
+      status: player.status || null,
+      starter: starterIds.has(String(playerId)),
+      starterOrder: starterOrder.get(String(playerId)) ?? null
+    };
+  };
+  const positionOrder = { QB: 1, RB: 2, WR: 3, TE: 4, K: 5, DEF: 6, DST: 6 };
+  const teams = bundle.rosters.map(roster => {
+    const owner = usersById[roster.owner_id] || {};
+    const starterOrder = new Map((roster.starters || []).map((id, index) => [String(id), index]));
+    const starterIds = new Set(starterOrder.keys());
+    const allPlayers = (roster.players || []).map(id => playerView(id, starterIds, starterOrder));
+    const sortPlayers = (left, right) => (left.starterOrder ?? 99) - (right.starterOrder ?? 99)
+      || (positionOrder[left.position] ?? 99) - (positionOrder[right.position] ?? 99)
+      || left.name.localeCompare(right.name);
+    return {
+      rosterId: roster.roster_id,
+      team: owner.metadata?.team_name || owner.display_name || owner.username || `Roster ${roster.roster_id}`,
+      manager: owner.display_name || owner.username || 'Unknown manager',
+      username: owner.username || null,
+      startersSubmitted: starterIds.size > 0,
+      starters: allPlayers.filter(player => player.starter).sort(sortPlayers),
+      bench: allPlayers.filter(player => !player.starter).sort(sortPlayers),
+      rosterSize: allPlayers.length
+    };
+  }).sort((left, right) => left.team.localeCompare(right.team));
+  return {
+    league: {
+      id: bundle.league.league_id,
+      name: bundle.league.name,
+      season: bundle.league.season,
+      totalRosters: bundle.league.total_rosters,
+      rosterPositions: bundle.league.roster_positions || [],
+      scoring: bundle.league.scoring_settings || {}
+    },
+    teams,
+    source: 'Sleeper read-only API',
+    syncedAt: bundle.syncedAt
+  };
+}
+
 
 function stripHtml(s){return String(s||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();}
 async function aiAnalyst(prompt, context={}) {
@@ -501,6 +555,10 @@ async function route(req, res, url) {
     if (parts[0]==='api' && parts[1]==='league' && parts[2]) {
       const id=decodeURIComponent(parts[2]) || DEFAULT_LEAGUE_ID;
       if(parts.length===3) return json(res,200,await leagueBundle(id));
+      if(parts[3]==='roster-center') {
+        const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
+        return json(res,200,rosterCenter(bundle,players));
+      }
       if(parts[3]==='analysis') {
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         const byId=players,userById=Object.fromEntries(bundle.users.map(u=>[u.user_id,u]));

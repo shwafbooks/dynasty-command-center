@@ -1,0 +1,25 @@
+:root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background:#07111f; color:#eaf2ff; }
+* { box-sizing:border-box; }
+body { margin:0; background:radial-gradient(circle at 10% 0,#12395b 0,transparent 32rem),#07111f; }
+main { width:min(1440px,calc(100% - 32px)); margin:0 auto; padding:48px 0 72px; }
+.masthead { border-bottom:1px solid #28445f; padding-bottom:24px; margin-bottom:24px; }
+.eyebrow { color:#76d6ff; font-size:.75rem; font-weight:800; letter-spacing:.14em; margin:0 0 9px; }
+.title-row { display:flex; justify-content:space-between; align-items:end; gap:24px; }
+h1 { font-size:clamp(2.2rem,6vw,4.3rem); margin:0; letter-spacing:-.06em; }
+.title-row p { color:#a6b6c9; margin:8px 0 0; }
+button { background:#e9f5ff; color:#06203a; border:0; border-radius:999px; padding:11px 16px; font-weight:800; cursor:pointer; }
+button:disabled { opacity:.55; cursor:wait; }
+.disclosure { color:#8fa2b7; display:flex; flex-wrap:wrap; gap:10px 18px; font-size:.8rem; margin-top:19px; }
+.notice { padding:16px; border:1px solid #d36b60; color:#ffd6d1; border-radius:10px; margin-bottom:18px; }
+.roster-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:16px; }
+.team-card { background:linear-gradient(150deg,#11263a,#0b1929); border:1px solid #25435d; border-radius:14px; overflow:hidden; box-shadow:0 14px 40px #02081455; }
+.team-header { padding:18px 18px 15px; display:flex; justify-content:space-between; gap:12px; border-bottom:1px solid #25435d; }
+h2 { font-size:1.15rem; margin:0; } .manager { color:#9fb2c6; font-size:.84rem; margin:4px 0 0; }
+.roster-count { color:#7dd2fb; white-space:nowrap; font-size:.75rem; font-weight:700; }
+.lineup-section { padding:15px 18px; } .bench-section { background:#08152477; border-top:1px solid #203a52; }
+h3 { color:#86cdf0; font-size:.7rem; letter-spacing:.12em; margin:0 0 8px; text-transform:uppercase; } .starter-note { color:#eab667; font-weight:500; letter-spacing:normal; text-transform:none; }
+.player-list { margin:0; padding:0; list-style:none; display:grid; gap:5px; }
+.player { display:grid; grid-template-columns:35px 1fr 32px; align-items:center; gap:8px; font-size:.88rem; min-width:0; }
+.position { color:#7ad4ff; font-size:.68rem; font-weight:800; } .player-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .nfl-team { color:#91a4b9; font-size:.7rem; text-align:right; font-weight:700; }
+.empty { color:#a5b1c1; font-size:.84rem; line-height:1.45; }
+@media (max-width:560px) { main { width:min(100% - 24px,1440px); padding-top:25px; } .title-row { align-items:start; flex-direction:column; gap:14px; } .roster-grid { grid-template-columns:1fr; } }

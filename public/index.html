@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dynasty Command Center</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <header class="masthead">
+      <p class="eyebrow">DYNASTY COMMAND CENTER · LIVE DATA</p>
+      <div class="title-row">
+        <div>
+          <h1>Roster Center</h1>
+          <p id="subtitle">Loading the league room…</p>
+        </div>
+        <button id="refresh" type="button">Refresh live data</button>
+      </div>
+      <div class="disclosure"><span>Source: Sleeper read-only API</span><span id="sync-status"></span></div>
+    </header>
+    <section id="error" class="notice" hidden></section>
+    <section id="rosters" class="roster-grid" aria-live="polite"></section>
+  </main>
+  <template id="team-template">
+    <article class="team-card">
+      <header class="team-header">
+        <div><h2></h2><p class="manager"></p></div>
+        <span class="roster-count"></span>
+      </header>
+      <section class="lineup-section">
+        <h3>Starters <span class="starter-note"></span></h3>
+        <ul class="player-list starters"></ul>
+      </section>
+      <section class="lineup-section bench-section">
+        <h3>Bench</h3>
+        <ul class="player-list bench"></ul>
+      </section>
+    </article>
+  </template>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
