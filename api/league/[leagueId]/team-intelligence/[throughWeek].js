@@ -1,0 +1,71 @@
+import { buildVerifiedSeasonScoring } from '../../../../lib/season-scoring.js';
+import { buildLeagueTeamIntelligence } from '../../../../lib/team-intelligence.js';
+
+const API = process.env.SLEEPER_API_BASE || 'https://api.sleeper.app/v1';
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data, null, 2), {
+    status,
+    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
+  });
+}
+
+async function sleeper(path) {
+  const response = await fetch(`${API}${path}`, { headers: { 'User-Agent': 'DynastyCommandCenter/team-intelligence' } });
+  if (!response.ok) throw new Error(`Sleeper ${response.status} on ${path}`);
+  return response.json();
+}
+
+function nameOf(player = {}) {
+  return player.full_name || [player.first_name, player.last_name].filter(Boolean).join(' ') || player.player_id;
+}
+
+export default {
+  async fetch(request) {
+    try {
+      const url = new URL(request.url);
+      const parts = url.pathname.split('/').filter(Boolean);
+      const leagueIndex = parts.indexOf('league');
+      const intelligenceIndex = parts.indexOf('team-intelligence');
+      const leagueId = leagueIndex >= 0 ? parts[leagueIndex + 1] : null;
+      const throughWeek = intelligenceIndex >= 0 ? Number(parts[intelligenceIndex + 1]) : NaN;
+      if (!leagueId || !Number.isInteger(throughWeek) || throughWeek < 1) {
+        return json({ status: 'error', message: 'Expected /api/league/:leagueId/team-intelligence/:throughWeek' }, 400);
+      }
+
+      const [seasonScoring, rosters, users, players] = await Promise.all([
+        buildVerifiedSeasonScoring({ leagueId, throughWeek }),
+        sleeper(`/league/${leagueId}/rosters`),
+        sleeper(`/league/${leagueId}/users`),
+        sleeper('/players/nfl')
+      ]);
+      const usersById = Object.fromEntries((users || []).map(user => [user.user_id, user]));
+      const teams = (rosters || []).map(roster => {
+        const owner = usersById[roster.owner_id] || {};
+        const starterIds = new Set((roster.starters || []).map(String));
+        const view = id => {
+          const player = players[String(id)] || {};
+          return { id: String(id), name: nameOf(player), position: player.fantasy_positions?.[0] || player.position || '', nflTeam: player.team || null };
+        };
+        const all = (roster.players || []).map(view);
+        return {
+          rosterId: roster.roster_id,
+          team: owner.metadata?.team_name || owner.display_name || owner.username || `Roster ${roster.roster_id}`,
+          manager: owner.display_name || owner.username || 'Unknown manager',
+          starters: all.filter(player => starterIds.has(player.id)),
+          bench: all.filter(player => !starterIds.has(player.id))
+        };
+      });
+
+      const report = buildLeagueTeamIntelligence({ teams, seasonScoring });
+      return json({
+        leagueId: String(leagueId),
+        throughWeek,
+        seasonScoringStatus: seasonScoring.status,
+        ...report
+      }, report.status === 'insufficient-data' ? 422 : 200);
+    } catch (error) {
+      return json({ status: 'error', message: error instanceof Error ? error.message : String(error) }, 500);
+    }
+  }
+};
