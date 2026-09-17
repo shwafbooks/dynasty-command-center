@@ -13,6 +13,7 @@ const teamsV2 = document.createElement('link');
 teamsV2.rel = 'stylesheet'; teamsV2.href = '/teams-v2.css'; document.head.append(teamsV2);
 
 const TEAM_ORDER = ['shwaf','BillClintonArkansas','stuffy229','Simasko','1riggy1','jackig','karasouel','Moosinator','James1836','TUTO'];
+const VERIFIED_SCORING_THROUGH_WEEK = 1;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const initials = name => String(name || 'DCC').split(/\s+/).filter(Boolean).slice(0,2).map(x => x[0]).join('').toUpperCase();
 const playerImage = player => player?.id ? `https://sleepercdn.com/content/nfl/players/thumb/${encodeURIComponent(player.id)}.jpg` : '';
@@ -26,6 +27,22 @@ async function loadSleeperAvatars(){
     const users = await response.json();
     avatarsByUsername = Object.fromEntries(users.map(user => [user.username, user.avatar || null]));
   } catch { avatarsByUsername = {}; }
+}
+async function loadVerifiedSeasonScoring(){
+  try {
+    const response = await fetch(`/api/league/${leagueId}/season-scoring/${VERIFIED_SCORING_THROUGH_WEEK}`, {cache:'no-store'});
+    const data = await response.json();
+    if(!response.ok || data.status !== 'verified' || !data.complete) return null;
+    return data;
+  } catch { return null; }
+}
+function applyVerifiedSeasonScoring(teams, scoring){
+  if(!scoring?.players) return teams;
+  return teams.map(team => ({
+    ...team,
+    starters:(team.starters || []).map(player => ({...player, seasonPoints:scoring.players[String(player.id)]?.points})),
+    bench:(team.bench || []).map(player => ({...player, seasonPoints:scoring.players[String(player.id)]?.points}))
+  }));
 }
 function canonicalTeams(teams){
   return [...teams].sort((a,b)=>{
@@ -69,7 +86,7 @@ function renderTeam(team, index) {
   const body = document.createElement('div'); body.className = 'team-accordion__body';
   const featured = featuredPlayers(team);
   const featureModule = document.createElement('section'); featureModule.className = 'featured-module';
-  featureModule.innerHTML = `<div class="featured-module__heading"><div><span class="team-accordion__eyebrow">TEAM SPOTLIGHT</span><h4>${esc(featured.title)}</h4></div><small>${featured.mode === 'scoring' ? 'Current season · DCC league scoring' : 'Preseason / scoring feed pending'}</small></div><div class="featured-players">${featured.players.map((player,i) => `<article class="featured-player"><div class="featured-player__rank">${featured.mode === 'scoring' ? `#${i+1}` : 'WATCH'}</div><div class="featured-player__photo">${playerImage(player) ? `<img src="${playerImage(player)}" alt="${esc(player.name)}" loading="lazy">` : `<span>${esc(player.position)}</span>`}</div><div class="featured-player__info"><small>${esc(player.position)} · ${esc(player.nflTeam || 'FA')}</small><strong>${esc(player.name)}</strong>${featured.mode === 'scoring' ? `<b>${Number(player.seasonPoints).toFixed(1)} PTS</b>` : ''}</div></article>`).join('')}</div>`;
+  featureModule.innerHTML = `<div class="featured-module__heading"><div><span class="team-accordion__eyebrow">TEAM SPOTLIGHT</span><h4>${esc(featured.title)}</h4></div><small>${featured.mode === 'scoring' ? `Verified through Week ${VERIFIED_SCORING_THROUGH_WEEK} · DCC league scoring` : 'Verified scoring unavailable'}</small></div><div class="featured-players">${featured.players.map((player,i) => `<article class="featured-player"><div class="featured-player__rank">${featured.mode === 'scoring' ? `#${i+1}` : 'WATCH'}</div><div class="featured-player__photo">${playerImage(player) ? `<img src="${playerImage(player)}" alt="${esc(player.name)}" loading="lazy">` : `<span>${esc(player.position)}</span>`}</div><div class="featured-player__info"><small>${esc(player.position)} · ${esc(player.nflTeam || 'FA')}</small><strong>${esc(player.name)}</strong>${featured.mode === 'scoring' ? `<b>${Number(player.seasonPoints).toFixed(1)} PTS</b>` : ''}</div></article>`).join('')}</div>`;
   featureModule.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.parentElement.innerHTML = '<span>PLAYER</span>'; }, { once:true }));
   const groups = document.createElement('div'); groups.className = 'roster-groups'; groups.append(lineupGroup('Starters', team.starters || [], team.startersSubmitted ? '' : 'No lineup submitted'), lineupGroup('Bench', team.bench || []));
   body.append(featureModule, groups); details.append(summary, body);
@@ -85,8 +102,13 @@ function setActiveNavigation() { const links = [...document.querySelectorAll('.p
 async function loadRosters() {
   refresh.disabled = true; error.hidden = true;
   try {
-    const [response] = await Promise.all([fetch(`/api/league/${leagueId}/roster-center`, { cache:'no-store' }), loadSleeperAvatars()]); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Sleeper data could not be loaded.');
-    const teams = canonicalTeams(data.teams || []); teamsSubtitle.textContent = `${data.league.name || 'League'} · ${data.league.season || 'Current season'} · ${teams.length} teams`; syncStatus.textContent = `Synced ${new Date(data.syncedAt).toLocaleString()}`; updatePulse({...data,teams}); franchiseGrid.replaceChildren(...teams.map(renderFranchise)); renderUnrankedTeams(teams); rosters.replaceChildren(...teams.map(renderTeam));
+    const [response, scoring] = await Promise.all([
+      fetch(`/api/league/${leagueId}/roster-center`, { cache:'no-store' }),
+      loadVerifiedSeasonScoring(),
+      loadSleeperAvatars()
+    ]);
+    const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Sleeper data could not be loaded.');
+    const teams = canonicalTeams(applyVerifiedSeasonScoring(data.teams || [], scoring)); teamsSubtitle.textContent = `${data.league.name || 'League'} · ${data.league.season || 'Current season'} · ${teams.length} teams`; syncStatus.textContent = `Synced ${new Date(data.syncedAt).toLocaleString()}`; updatePulse({...data,teams}); franchiseGrid.replaceChildren(...teams.map(renderFranchise)); renderUnrankedTeams(teams); rosters.replaceChildren(...teams.map(renderTeam));
   } catch (cause) { error.textContent = `Live roster data is temporarily unavailable: ${cause.message}`; error.hidden = false; syncStatus.textContent = 'Live roster data unavailable'; } finally { refresh.disabled = false; }
 }
 refresh.addEventListener('click', loadRosters); setActiveNavigation(); loadRosters();
