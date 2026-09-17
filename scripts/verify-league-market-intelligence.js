@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { buildLeagueMarketIntelligence } from '../lib/league-market-intelligence.js';
+const sleeperPlayers=[{id:'1',name:'A',position:'QB'},{id:'2',name:'B',position:'RB'},{id:'3',name:'C',position:'WR'},{id:'4',name:'D',position:'TE'},{id:'5',name:'E',position:'WR'}];
+const teams=[{rosterId:1,starters:sleeperPlayers.slice(0,3),bench:sleeperPlayers.slice(3)}];
+const ktc={source:'keeptradecut',asOf:'2026-09-18',players:sleeperPlayers.map((p,i)=>({playerId:p.id,name:p.name,position:p.position,value:100-i*10}))};
+const dp={source:'dynastyprocess',asOf:'2026-09-18',players:sleeperPlayers.map((p,i)=>({playerId:p.id,name:p.name,position:p.position,value:90-i*9}))};
+const ready=buildLeagueMarketIntelligence({teams,sleeperPlayers,snapshots:[ktc,dp],minimumLeagueOverlap:0.8});
+assert.equal(ready.publicationEligible,true);assert.equal(ready.status,'ready');assert.ok(ready.consensus);assert.ok(ready.disagreement);
+const partialDp={...dp,players:dp.players.slice(0,2)};
+const withheld=buildLeagueMarketIntelligence({teams,sleeperPlayers,snapshots:[ktc,partialDp],minimumLeagueOverlap:0.8});
+assert.equal(withheld.publicationEligible,false);assert.equal(withheld.status,'withheld');assert.equal(withheld.consensus,null);assert.ok(withheld.reasons.includes('insufficient-league-player-overlap'));
+console.log(JSON.stringify({ready:{status:ready.status,overlap:ready.leagueOverlap},withheld:{status:withheld.status,reasons:withheld.reasons,overlap:withheld.leagueOverlap}},null,2));
