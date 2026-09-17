@@ -1,0 +1,5 @@
+import assert from'node:assert/strict';import{assessFormulaStability}from'../lib/formula-stability.js';
+const result=(name,order)=>({name,status:'diagnostic-only',teams:order.map((id,i)=>({rosterId:String(id),team:`T${id}`,diagnosticOrder:i+1,diagnosticScore:1-i*.1}))});
+const stable=assessFormulaStability({status:'ready',published:false,results:[result('a',[1,2,3]),result('b',[2,1,3]),result('c',[1,2,3])]});assert.equal(stable.status,'ready');assert.equal(stable.stableEnoughToReview,true);assert.equal(stable.formulaSelected,false);assert.equal(stable.publishedRanking,false);
+const unstable=assessFormulaStability({status:'ready',published:false,results:[result('a',[1,2,3,4]),result('b',[4,2,3,1]),result('c',[1,3,2,4])]});assert.equal(unstable.stableEnoughToReview,false);assert.ok(unstable.maxOrderSpread>=3);assert.equal(unstable.provenance.automaticApproval,false);
+console.log(JSON.stringify({stable:{maxSpread:stable.maxOrderSpread,review:stable.stableEnoughToReview},unstable:{maxSpread:unstable.maxOrderSpread,review:unstable.stableEnoughToReview},formulaSelected:unstable.formulaSelected,published:unstable.publishedRanking},null,2));
