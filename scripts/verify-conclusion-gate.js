@@ -1,0 +1,7 @@
+import assert from'node:assert/strict';import{gateConclusion}from'../lib/conclusion-gate.js';
+const metric=(id,value,confidence=.9)=>({status:'ready',publishable:true,metricId:id,label:id,value,classification:'derived-metric',formulaVersion:'test-v1',confidence:{confidence},sources:[{source:'verified-test'}]});
+const supported=gateConclusion({claimType:'strength-evidence',metrics:[metric('wr-strength',87,.92)],requiredMetricIds:['wr-strength'],minimumConfidence:.75});assert.equal(supported.allowed,true);assert.equal(supported.narrativePolicy.aiMayChangeMetricValues,false);
+const missing=gateConclusion({claimType:'weakness-evidence',metrics:[],requiredMetricIds:['rb-depth']});assert.equal(missing.allowed,false);assert.ok(missing.reasons.includes('missing-publishable-metric:rb-depth'));
+const weak=gateConclusion({claimType:'comparison',metrics:[metric('qb-market',.8,.4)],requiredMetricIds:['qb-market'],minimumConfidence:.75});assert.equal(weak.allowed,false);assert.ok(weak.reasons.includes('confidence-below-threshold:qb-market'));
+const opinion=gateConclusion({claimType:'manager-is-bad',metrics:[metric('record',2)],requiredMetricIds:['record']});assert.equal(opinion.allowed,false);assert.ok(opinion.reasons.includes('unsupported-claim-type'));
+console.log(JSON.stringify({supported:{allowed:supported.allowed,evidence:supported.evidence},missing:{allowed:missing.allowed,reasons:missing.reasons},lowConfidence:{allowed:weak.allowed,reasons:weak.reasons},unsupportedOpinion:{allowed:opinion.allowed,reasons:opinion.reasons}},null,2));
