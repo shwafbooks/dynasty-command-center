@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { reconcileProviderPlayers } from '../lib/player-reconciliation.js';
+import { adaptProviderSnapshot } from '../lib/provider-adapter.js';
+const sleeper=[{id:'1',name:'Marvin Harrison Jr.',position:'WR'},{id:'2',name:'Josh Allen',position:'QB'},{id:'3',name:'Josh Allen',position:'DE'},{id:'4',name:'John Smith',position:'TE'},{id:'5',name:'John Smith',position:'TE'}];
+const provider=[{sleeperId:'1',name:'M Harrison',position:'WR',value:9000},{name:'Josh Allen',position:'QB',value:8500},{name:'John Smith',position:'TE',value:1000},{name:'Missing Player',position:'RB',value:500}];
+const result=reconcileProviderPlayers({source:'keeptradecut',providerPlayers:provider,sleeperPlayers:sleeper});
+assert.equal(result.matchedCount,2);assert.equal(result.ambiguousCount,1);assert.equal(result.unmatchedCount,1);assert.equal(result.matched[0].matchMethod,'sleeper-id');assert.equal(result.matched[1].matchMethod,'unique-name-position');
+const adapted=adaptProviderSnapshot({snapshot:{source:'keeptradecut',asOf:'2026-09-18',format:'superflex',players:provider},sleeperPlayers:sleeper});
+assert.equal(adapted.status,'review-required');assert.equal(adapted.players.length,2);assert.equal(adapted.provenance.rawValuePreserved,true);assert.equal(adapted.provenance.aiAdjusted,false);
+console.log(JSON.stringify({matched:result.matchedCount,ambiguous:result.ambiguousCount,unmatched:result.unmatchedCount,coverage:result.coverage,adapterStatus:adapted.status},null,2));
