@@ -13,12 +13,12 @@ const teamsV2 = document.createElement('link');
 teamsV2.rel = 'stylesheet'; teamsV2.href = '/teams-v2.css'; document.head.append(teamsV2);
 
 const TEAM_ORDER = ['shwaf','BillClintonArkansas','stuffy229','Simasko','1riggy1','jackig','karasouel','Moosinator','James1836','TUTO'];
-const VERIFIED_SCORING_THROUGH_WEEK = 1;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const initials = name => String(name || 'DCC').split(/\s+/).filter(Boolean).slice(0,2).map(x => x[0]).join('').toUpperCase();
 const playerImage = player => player?.id ? `https://sleepercdn.com/content/nfl/players/thumb/${encodeURIComponent(player.id)}.jpg` : '';
 const avatarImage = avatar => avatar ? `https://sleepercdn.com/avatars/${encodeURIComponent(avatar)}` : '';
 let avatarsByUsername = {};
+let verifiedScoringThroughWeek = null;
 
 async function loadSleeperAvatars(){
   try {
@@ -30,10 +30,23 @@ async function loadSleeperAvatars(){
 }
 async function loadVerifiedSeasonScoring(){
   try {
-    const response = await fetch(`/api/league/${leagueId}/season-scoring/${VERIFIED_SCORING_THROUGH_WEEK}`, {cache:'no-store'});
-    const data = await response.json();
-    if(!response.ok || data.status !== 'verified' || !data.complete) return null;
-    return data;
+    const stateResponse = await fetch('https://api.sleeper.app/v1/state/nfl', {cache:'no-store'});
+    if(!stateResponse.ok) return null;
+    const state = await stateResponse.json();
+    const currentWeek = Number(state.week);
+    if(!Number.isInteger(currentWeek) || currentWeek < 1) return null;
+
+    // Never publish an in-progress week. Start with the previous NFL week and
+    // walk backward until DCC finds a fully reconciled season total.
+    for(let throughWeek = Math.max(1, currentWeek - 1); throughWeek >= 1; throughWeek -= 1){
+      const response = await fetch(`/api/league/${leagueId}/season-scoring/${throughWeek}`, {cache:'no-store'});
+      const data = await response.json();
+      if(response.ok && data.status === 'verified' && data.complete){
+        verifiedScoringThroughWeek = throughWeek;
+        return data;
+      }
+    }
+    return null;
   } catch { return null; }
 }
 function applyVerifiedSeasonScoring(teams, scoring){
@@ -86,7 +99,7 @@ function renderTeam(team, index) {
   const body = document.createElement('div'); body.className = 'team-accordion__body';
   const featured = featuredPlayers(team);
   const featureModule = document.createElement('section'); featureModule.className = 'featured-module';
-  featureModule.innerHTML = `<div class="featured-module__heading"><div><span class="team-accordion__eyebrow">TEAM SPOTLIGHT</span><h4>${esc(featured.title)}</h4></div><small>${featured.mode === 'scoring' ? `Verified through Week ${VERIFIED_SCORING_THROUGH_WEEK} · DCC league scoring` : 'Verified scoring unavailable'}</small></div><div class="featured-players">${featured.players.map((player,i) => `<article class="featured-player"><div class="featured-player__rank">${featured.mode === 'scoring' ? `#${i+1}` : 'WATCH'}</div><div class="featured-player__photo">${playerImage(player) ? `<img src="${playerImage(player)}" alt="${esc(player.name)}" loading="lazy">` : `<span>${esc(player.position)}</span>`}</div><div class="featured-player__info"><small>${esc(player.position)} · ${esc(player.nflTeam || 'FA')}</small><strong>${esc(player.name)}</strong>${featured.mode === 'scoring' ? `<b>${Number(player.seasonPoints).toFixed(1)} PTS</b>` : ''}</div></article>`).join('')}</div>`;
+  featureModule.innerHTML = `<div class="featured-module__heading"><div><span class="team-accordion__eyebrow">TEAM SPOTLIGHT</span><h4>${esc(featured.title)}</h4></div><small>${featured.mode === 'scoring' && verifiedScoringThroughWeek ? `Verified through Week ${verifiedScoringThroughWeek} · DCC league scoring` : 'Verified scoring unavailable'}</small></div><div class="featured-players">${featured.players.map((player,i) => `<article class="featured-player"><div class="featured-player__rank">${featured.mode === 'scoring' ? `#${i+1}` : 'WATCH'}</div><div class="featured-player__photo">${playerImage(player) ? `<img src="${playerImage(player)}" alt="${esc(player.name)}" loading="lazy">` : `<span>${esc(player.position)}</span>`}</div><div class="featured-player__info"><small>${esc(player.position)} · ${esc(player.nflTeam || 'FA')}</small><strong>${esc(player.name)}</strong>${featured.mode === 'scoring' ? `<b>${Number(player.seasonPoints).toFixed(1)} PTS</b>` : ''}</div></article>`).join('')}</div>`;
   featureModule.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.parentElement.innerHTML = '<span>PLAYER</span>'; }, { once:true }));
   const groups = document.createElement('div'); groups.className = 'roster-groups'; groups.append(lineupGroup('Starters', team.starters || [], team.startersSubmitted ? '' : 'No lineup submitted'), lineupGroup('Bench', team.bench || []));
   body.append(featureModule, groups); details.append(summary, body);
@@ -102,6 +115,7 @@ function setActiveNavigation() { const links = [...document.querySelectorAll('.p
 async function loadRosters() {
   refresh.disabled = true; error.hidden = true;
   try {
+    verifiedScoringThroughWeek = null;
     const [response, scoring] = await Promise.all([
       fetch(`/api/league/${leagueId}/roster-center`, { cache:'no-store' }),
       loadVerifiedSeasonScoring(),
