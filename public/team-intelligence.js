@@ -1,45 +1,6 @@
-// Isolated Team Intelligence UI for the preview Teams workspace.
-// Reads only the verified Team Intelligence API; never invents a rating when data is unavailable.
-
-(() => {
-  const POSITIONS = ['QB','RB','WR','TE'];
-  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let report = null;
-  let throughWeek = null;
-
-  function positionCard(row) {
-    const players = (row?.players || []).filter(player => player.hasVerifiedScoring).slice(0,3);
-    return `<article class="ti-position-card">
-      <div class="ti-position-card__top"><span>${esc(row?.position || '—')}</span><strong>${Number(row?.seasonPoints || 0).toFixed(1)}</strong></div>
-      <small>verified roster pts · ${Number(row?.scoringPlayers || 0)}/${Number(row?.rosterCount || 0)} scoring</small>
-      <div class="ti-position-card__players">${players.length ? players.map(player => `<span>${esc(player.name)} <b>${Number(player.seasonPoints || 0).toFixed(1)}</b></span>`).join('') : '<span>Insufficient verified production</span>'}</div>
-    </article>`;
-  }
-
-  function panel(team) {
-    const intelligence = (report?.teams || []).find(row => String(row.rosterId) === String(team.rosterId));
-    const section = document.createElement('section');
-    section.className = 'team-intelligence-panel';
-    if (!intelligence) {
-      section.innerHTML = '<div class="ti-heading"><div><span class="team-accordion__eyebrow">TEAM INTELLIGENCE</span><h4>Verified Production</h4></div><small>Insufficient data</small></div><p class="ti-empty">DCC will publish this profile only when verified scoring is available.</p>';
-      return section;
-    }
-    section.innerHTML = `<div class="ti-heading"><div><span class="team-accordion__eyebrow">TEAM INTELLIGENCE · V1</span><h4>Verified Positional Production</h4></div><small>Through Week ${esc(throughWeek)} · deterministic</small></div>
-      <div class="ti-position-grid">${POSITIONS.map(position => positionCard(intelligence.positions?.[position])).join('')}</div>
-      <div class="ti-audit"><strong>${Number(intelligence.totalRosterPoints || 0).toFixed(1)} verified roster points</strong><span>Current-roster production only · not historical points-for</span><details><summary>How DCC calculated this</summary><p>For every player currently on this roster, DCC sums fantasy points from weeks that passed the league-wide Sleeper reconciliation gate, then groups those verified points by the player's listed position. No projections, age adjustments, market values, or AI ratings are used.</p></details></div>`;
-    return section;
-  }
-
-  async function load(week) {
-    throughWeek = Number(week);
-    if (!Number.isInteger(throughWeek) || throughWeek < 1) { report = null; return null; }
-    try {
-      const response = await fetch(`/api/league/${window.DCC_LEAGUE_ID || '1389344338340761600'}/team-intelligence/${throughWeek}`, {cache:'no-store'});
-      const data = await response.json();
-      report = response.ok && data.status === 'verified-production' ? data : null;
-      return report;
-    } catch { report = null; return null; }
-  }
-
-  window.DCCTeamIntelligence = { load, panel };
-})();
+// Isolated Team Intelligence UI. Reads verified DCC data only.
+(()=>{const POSITIONS=['QB','RB','WR','TE'];const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let report=null,throughWeek=null;
+function positionCard(row){const players=(row?.players||[]).filter(p=>p.hasVerifiedScoring).slice(0,3),cmp=row?.comparison;return`<article class="ti-position-card"><div class="ti-position-card__top"><span>${esc(row?.position||'—')}</span><strong>${Number(row?.seasonPoints||0).toFixed(1)}</strong></div>${cmp?`<div class="ti-rank"><b>#${cmp.rank} of ${cmp.leagueSize}</b><span>${cmp.pointsVsLeagueAverage>=0?'+':''}${Number(cmp.pointsVsLeagueAverage).toFixed(1)} vs avg</span></div>`:''}<small>verified roster pts · ${Number(row?.scoringPlayers||0)}/${Number(row?.rosterCount||0)} scoring</small><div class="ti-position-card__players">${players.length?players.map(p=>`<span>${esc(p.name)} <b>${Number(p.seasonPoints||0).toFixed(1)}</b></span>`).join(''):'<span>Insufficient verified production</span>'}</div></article>`;}
+function panel(team){const intelligence=(report?.teams||[]).find(row=>String(row.rosterId)===String(team.rosterId)),section=document.createElement('section');section.className='team-intelligence-panel';if(!intelligence){section.innerHTML='<div class="ti-heading"><div><span class="team-accordion__eyebrow">TEAM INTELLIGENCE</span><h4>Verified Production</h4></div><small>Insufficient data</small></div><p class="ti-empty">DCC will publish this profile only when verified scoring is available.</p>';return section;}section.innerHTML=`<div class="ti-heading"><div><span class="team-accordion__eyebrow">TEAM INTELLIGENCE · V1.1</span><h4>Verified Positional Production</h4></div><small>Through Week ${esc(throughWeek)} · ${esc(report.formulaVersion||'deterministic')}</small></div><div class="ti-position-grid">${POSITIONS.map(position=>positionCard(intelligence.positions?.[position])).join('')}</div><div class="ti-audit"><strong>${Number(intelligence.totalRosterPoints||0).toFixed(1)} verified roster points</strong><span>Current-roster production · descriptive, not a projection</span><details><summary>Audit formula</summary><p>DCC sums verified fantasy points for players currently on this roster and groups them by listed position. Position rank is the descending positional total across all 10 franchises; exact ties use roster ID only for display order. “Vs avg” is this team's positional total minus the 10-team league average. This is not dynasty value, historical points-for, or a future-strength prediction. No AI, age, projection, or market-value adjustment is used.</p></details></div>`;return section;}
+async function load(week){throughWeek=Number(week);if(!Number.isInteger(throughWeek)||throughWeek<1){report=null;return null;}try{const response=await fetch(`/api/league/${window.DCC_LEAGUE_ID||'1389344338340761600'}/team-intelligence/${throughWeek}`,{cache:'no-store'}),data=await response.json();report=response.ok&&data.status==='verified-production'?data:null;return report;}catch{report=null;return null;}}
+window.DCCTeamIntelligence={load,panel};})();
