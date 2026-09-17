@@ -1,0 +1,6 @@
+import assert from'node:assert/strict';import{buildReplacementQualityEvidence}from'../lib/replacement-quality-evidence.js';
+const replacementEvidence={status:'ready',positions:{QB:{availablePlayerIds:['q1','q2','q3']},RB:{availablePlayerIds:['r1','r2']},WR:{availablePlayerIds:[]},TE:{availablePlayerIds:['t1']}}};
+const consensusPlayers={q1:{consensusPercentile:.31,agreement:.9,sourceCount:3},q3:{consensusPercentile:.12,agreement:.8,sourceCount:2},r2:{consensusPercentile:.44,agreement:.75,sourceCount:2}};
+const out=buildReplacementQualityEvidence({replacementEvidence,consensusPlayers});assert.equal(out.status,'ready');assert.equal(out.positions.QB.availableCount,3);assert.equal(out.positions.QB.valuedAvailableCount,2);assert.equal(out.positions.QB.bestAvailable.playerId,'q1');assert.equal(out.positions.QB.top3MeanConsensusPercentile,.215);assert.equal(out.positions.RB.bestAvailable.playerId,'r2');assert.equal(out.positions.TE.valuedAvailableCount,0);assert.equal(out.provenance.missingValuesEstimated,false);assert.equal(out.provenance.arbitraryScarcityMultiplier,false);
+const blocked=buildReplacementQualityEvidence({replacementEvidence:{status:'withheld'},consensusPlayers});assert.equal(blocked.publicationEligible,false);
+console.log(JSON.stringify({status:out.status,coverage:out.marketCoverage,positions:out.positions,blocked},null,2));
