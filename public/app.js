@@ -37,6 +37,19 @@ function teamLogoMarkup(team){
   const image=avatarImage(avatarsByUsername[team.username]);
   return image ? `<img src="${image}" alt="" loading="lazy" onerror="this.remove();this.parentElement.textContent='${esc(initials(team.team))}'">` : esc(initials(team.team));
 }
+function allTeamPlayers(team){
+  return [...(team.starters || []), ...(team.bench || [])];
+}
+function featuredPlayers(team){
+  const players = allTeamPlayers(team);
+  const withSeasonPoints = players.filter(player => Number.isFinite(Number(player.seasonPoints)));
+  if (withSeasonPoints.length) {
+    return { title:'Top 5 Fantasy Scorers', mode:'scoring', players:withSeasonPoints.sort((a,b)=>Number(b.seasonPoints)-Number(a.seasonPoints)).slice(0,5) };
+  }
+  // Until verified league-scoring totals are connected, this is intentionally not presented as a ranking.
+  const starters = team.starters?.length ? team.starters : players;
+  return { title:'Players to Watch', mode:'watch', players:starters.slice(0,5) };
+}
 
 function playerRow(player) {
   const row = document.createElement('li'); row.className = 'player player--visual'; const image = playerImage(player);
@@ -55,11 +68,12 @@ function renderTeam(team, index) {
   const summary = document.createElement('summary'); summary.className = 'team-accordion__summary';
   summary.innerHTML = `<div class="team-logo" aria-hidden="true">${teamLogoMarkup(team)}</div><div class="team-accordion__identity"><span class="team-accordion__eyebrow">FRANCHISE ${String(index + 1).padStart(2,'0')}</span><strong>${esc(team.team)}</strong><small>${esc(team.manager)}</small></div><div class="team-accordion__meta"><span>${team.rosterSize} PLAYERS</span><span class="live-dot">LIVE</span><b class="accordion-chevron" aria-hidden="true">⌄</b></div>`;
   const body = document.createElement('div'); body.className = 'team-accordion__body';
-  const featurePlayers = (team.starters?.length ? team.starters : team.bench || []).slice(0,4); const feature = document.createElement('div'); feature.className = 'featured-players';
-  feature.innerHTML = featurePlayers.map(player => `<article class="featured-player"><div class="featured-player__photo">${playerImage(player) ? `<img src="${playerImage(player)}" alt="${esc(player.name)}" loading="lazy">` : `<span>${esc(player.position)}</span>`}</div><div><small>${esc(player.position)} · ${esc(player.nflTeam || 'FA')}</small><strong>${esc(player.name)}</strong></div></article>`).join('');
-  feature.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.parentElement.innerHTML = '<span>PLAYER</span>'; }, { once:true }));
+  const featured = featuredPlayers(team);
+  const featureModule = document.createElement('section'); featureModule.className = 'featured-module';
+  featureModule.innerHTML = `<div class="featured-module__heading"><div><span class="team-accordion__eyebrow">TEAM SPOTLIGHT</span><h4>${esc(featured.title)}</h4></div><small>${featured.mode === 'scoring' ? 'Current season · DCC league scoring' : 'Preseason / scoring feed pending'}</small></div><div class="featured-players">${featured.players.map((player,i) => `<article class="featured-player"><div class="featured-player__rank">${featured.mode === 'scoring' ? `#${i+1}` : 'WATCH'}</div><div class="featured-player__photo">${playerImage(player) ? `<img src="${playerImage(player)}" alt="${esc(player.name)}" loading="lazy">` : `<span>${esc(player.position)}</span>`}</div><div class="featured-player__info"><small>${esc(player.position)} · ${esc(player.nflTeam || 'FA')}</small><strong>${esc(player.name)}</strong>${featured.mode === 'scoring' ? `<b>${Number(player.seasonPoints).toFixed(1)} PTS</b>` : ''}</div></article>`).join('')}</div>`;
+  featureModule.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.parentElement.innerHTML = '<span>PLAYER</span>'; }, { once:true }));
   const groups = document.createElement('div'); groups.className = 'roster-groups'; groups.append(lineupGroup('Starters', team.starters || [], team.startersSubmitted ? '' : 'No lineup submitted'), lineupGroup('Bench', team.bench || []));
-  body.append(feature, groups); details.append(summary, body);
+  body.append(featureModule, groups); details.append(summary, body);
   details.addEventListener('toggle', () => { if (!details.open) return; document.querySelectorAll('.team-accordion[open]').forEach(other => { if (other !== details) other.open = false; }); }); return details;
 }
 function renderFranchise(team, index) {
