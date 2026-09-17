@@ -786,4 +786,11 @@ async function route(req, res, url) {
 }
 
 const server=http.createServer((req,res)=>{const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);route(req,res,url);});
-server.listen(PORT,()=>console.log(`Dynasty Command Center v1.0 running at http://localhost:${PORT}`));
+
+// Vercel imports `route` from api/[...path].js.  Only listen when this file is
+// invoked directly so importing it as a serverless function does not create a
+// second HTTP server inside the function runtime.
+const isDirectExecution = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isDirectExecution) server.listen(PORT,()=>console.log(`Dynasty Command Center v1.0 running at http://localhost:${PORT}`));
+
+export { route };
