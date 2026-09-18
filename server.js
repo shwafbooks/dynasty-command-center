@@ -560,11 +560,15 @@ async function route(req, res, url) {
         return json(res,200,rosterCenter(bundle,players));
       }
       if(parts[3]==='analysis') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-analysis-disabled',replacement:`/api/league/${id}/team-component-matrix/1`,policy:'Unverified search-rank projections cannot publish DCC roster scores or rankings.'});
+        /* LEGACY_DISABLED
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         const byId=players,userById=Object.fromEntries(bundle.users.map(u=>[u.user_id,u]));
         const analyses=bundle.rosters.map(r=>({rosterId:r.roster_id,ownerId:r.owner_id,owner:userById[r.owner_id]||null,...optimizeRoster(r,byId,bundle.league.roster_positions||[]),...optimizeProjected(r,byId)})).sort((a,b)=>b.projectedPoints-a.projectedPoints);
         const max=analyses[0]?.starterScore||1; analyses.forEach((a,i)=>{a.liveRosterScore=Number((70+30*a.starterScore/max).toFixed(1));a.rank=i+1;});
         return json(res,200,{league:bundle.league,analyses,syncedAt:new Date().toISOString(),playerCache:'24h'});
+      }
+        */
       }
       if(parts[3]==='matchups' && parts[4]) return json(res,200,await sleeper(`/league/${id}/matchups/${encodeURIComponent(parts[4])}`,60000));
       if(parts[3]==='transactions' && parts[4]) return json(res,200,await sleeper(`/league/${id}/transactions/${encodeURIComponent(parts[4])}`,60000));
