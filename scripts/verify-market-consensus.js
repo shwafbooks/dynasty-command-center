@@ -33,3 +33,4 @@ assert.equal(independent.status,'consensus-ready');
 assert.equal(independent.players.x.independentSourceCount,2);
 
 console.log(JSON.stringify({consensusStatus:consensus.status,players:Object.values(consensus.players).map(p=>({playerId:p.playerId,consensusPercentile:p.consensusPercentile,agreement:p.agreement})),disagreementStatus:disagreement.status,distribution:disagreement.distribution},null,2));
+
