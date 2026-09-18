@@ -18,4 +18,18 @@ assert.equal(disagreement.playerCount,3);
 assert.equal(disagreement.provenance.sourceWinnerDeclared,false);
 assert.ok(disagreement.players.a.percentileSpread>=0);
 assert.ok(['low','moderate','high'].includes(disagreement.players.a.disagreementLevel));
+
+// v2: two provider websites from the same evidence family must NOT create consensus.
+const sameFamily=buildMarketConsensus({sources:[
+ {source:'trade-a',independenceGroup:'completed-trades',asOf:'2026-09-18',players:[{playerId:'x',value:100}]},
+ {source:'trade-b',independenceGroup:'completed-trades',asOf:'2026-09-18',players:[{playerId:'x',value:90}]}
+],minimumSources:2});
+assert.equal(sameFamily.status,'insufficient-data');
+const independent=buildMarketConsensus({sources:[
+ {source:'trade-a',independenceGroup:'completed-trades',asOf:'2026-09-18',players:[{playerId:'x',value:100}]},
+ {source:'expert',independenceGroup:'expert-rankings',asOf:'2026-09-18',players:[{playerId:'x',value:90}]}
+],minimumSources:2});
+assert.equal(independent.status,'consensus-ready');
+assert.equal(independent.players.x.independentSourceCount,2);
+
 console.log(JSON.stringify({consensusStatus:consensus.status,players:Object.values(consensus.players).map(p=>({playerId:p.playerId,consensusPercentile:p.consensusPercentile,agreement:p.agreement})),disagreementStatus:disagreement.status,distribution:disagreement.distribution},null,2));
