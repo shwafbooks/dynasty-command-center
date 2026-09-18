@@ -3,6 +3,7 @@ import {buildDccRosterStrength} from '../lib/dcc-roster-strength.js';
 import {normalizeTeamComponents} from '../lib/component-normalization.js';
 import {runFormulaLab} from '../lib/formula-lab.js';
 import {canonicalFranchise} from '../lib/franchise-identity.js';
+import {ingestProviderSnapshots} from '../lib/provider-ingestion.js';
 
 const legacy=buildDccRosterStrength();
 assert.equal(legacy.status,'withheld');
@@ -28,5 +29,11 @@ assert.equal(foreign.canonicalTeam,null);
 const home=canonicalFranchise({leagueId:'1389344338340761600',manager:'shwaf',liveTeam:'Return of the Jedi',rosterId:8});
 assert.equal(home.team,'Return of the Jedi');
 assert.equal(home.canonicalTeam,'Drake Maye');
+
+const sameFamily=ingestProviderSnapshots({snapshots:[
+ {source:'fantasycalc',independenceGroup:'completed-trades',asOf:'2026-09-18',players:[{playerId:'1',value:10}]},
+ {source:'statsguy',independenceGroup:'completed-trades',asOf:'2026-09-18',players:[{playerId:'1',value:20}]}
+],minimumIndependentSources:2});
+assert.equal(sameFamily.publicationEligible,false);
 
 console.log('DCC foundation smoke checks passed');
