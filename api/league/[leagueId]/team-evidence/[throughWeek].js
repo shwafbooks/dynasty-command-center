@@ -1,5 +1,5 @@
-import {buildLiveTeamComponentMatrix} from '../../../../../lib/live-team-component-matrix.js';
-import {buildStrengthAxes} from '../../../../../lib/strength-axes.js';
+import {buildLiveTeamComponentMatrix} from '../../../../lib/live-team-component-matrix.js';
+import {buildStrengthAxes} from '../../../../lib/strength-axes.js';
 const json=(d,s=200)=>new Response(JSON.stringify(d,null,2),{status:s,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-robots-tag':'noindex'}});
 export default{async fetch(request){try{
  const p=new URL(request.url).pathname.split('/').filter(Boolean),i=p.indexOf('league'),m=p.indexOf('team-evidence'),leagueId=i>=0?p[i+1]:null,throughWeek=m>=0?Number(p[m+1]):NaN;
