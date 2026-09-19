@@ -45,5 +45,7 @@ assert.equal(axes.overallRankingPublished,false);
 assert.equal(axes.provenance.replacementDoubleCounted,false);
 assert.equal(axes.teams[0].competitiveEvidence.verifiedProduction,10);
 assert.equal(axes.teams[0].dynastyAssetEvidence.lineupMarketCore,.2);
+assert.equal(axes.teams[0].dynastyAssetEvidence.replacementContext,.4);
+assert.equal(axes.interpretation.dynastyAssetStrength.includes('not independently added'),true);
 
 console.log('DCC foundation smoke checks passed');
