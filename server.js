@@ -573,10 +573,14 @@ async function route(req, res, url) {
       if(parts[3]==='matchups' && parts[4]) return json(res,200,await sleeper(`/league/${id}/matchups/${encodeURIComponent(parts[4])}`,60000));
       if(parts[3]==='transactions' && parts[4]) return json(res,200,await sleeper(`/league/${id}/transactions/${encodeURIComponent(parts[4])}`,60000));
       if(parts[3]==='engagement') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-engagement-disabled',policy:'This legacy route depends on unverified heuristic player values or projections and cannot publish DCC intelligence.'});
+        /* LEGACY_DISABLED_engagement
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         const byId=players,userById=Object.fromEntries(bundle.users.map(u=>[u.user_id,u]));
         const analyses=bundle.rosters.map(r=>({rosterId:r.roster_id,ownerId:r.owner_id,owner:userById[r.owner_id]||null,...optimizeProjected(r,byId)})).sort((a,b)=>b.projectedPoints-a.projectedPoints);
         return json(res,200,{snapshot:engagementSnapshot(analyses),syncedAt:new Date().toISOString(),league:bundle.league});
+      }
+        */
       }
       if(parts[3]==='player-intelligence') {
         const playerId=url.searchParams.get('playerId');
@@ -585,14 +589,22 @@ async function route(req, res, url) {
         return json(res,200,playerIntelligence(p,bundle.rosters,bundle.users,players));
       }
       if(parts[3]==='smart-targets') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-smart-targets-disabled',policy:'This legacy route depends on unverified heuristic player values or projections and cannot publish DCC intelligence.'});
+        /* LEGACY_DISABLED_smart_targets
         const targetRosterId=url.searchParams.get('rosterId');
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         return json(res,200,{targets:smartTargets(bundle.rosters,bundle.users,players,targetRosterId),syncedAt:new Date().toISOString()});
       }
+        */
+      }
       if(parts[3]==='trade-targets') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-trade-targets-disabled',policy:'This legacy route depends on unverified heuristic player values or projections and cannot publish DCC intelligence.'});
+        /* LEGACY_DISABLED_trade_targets
         const targetRosterId=url.searchParams.get('rosterId');
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         return json(res,200,{targets:tradeFinder(bundle.rosters,bundle.users,players,targetRosterId),syncedAt:new Date().toISOString()});
+      }
+        */
       }
       if(parts[3]==='trade-package' && req.method==='POST') {
         let body=''; for await (const chunk of req) body+=chunk; const payload=JSON.parse(body||'{}');
@@ -603,9 +615,13 @@ async function route(req, res, url) {
         return json(res,200,packageTradeAnalysis(ap,bp,payload.givePlayerIds||[],payload.getPlayerIds||[]));
       }
       if(parts[3]==='trade-packages') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-trade-packages-disabled',policy:'This legacy route depends on unverified heuristic player values or projections and cannot publish DCC intelligence.'});
+        /* LEGACY_DISABLED_trade_packages
         const targetRosterId=url.searchParams.get('rosterId');
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         return json(res,200,{targets:generatePackageTargets(bundle.rosters,bundle.users,players,targetRosterId),syncedAt:new Date().toISOString()});
+      }
+        */
       }
       if(parts[3]==='mock-trade' && req.method==='POST') {
         let body=''; for await (const chunk of req) body+=chunk; const payload=JSON.parse(body||'{}');
@@ -628,6 +644,8 @@ async function route(req, res, url) {
         return json(res,200,{...analysis,teamA:{rosterId:a.roster_id,before:makeRoster(ap,new Set(),[]),after:makeRoster(ap,giveIds,get)},teamB:{rosterId:b.roster_id,before:makeRoster(bp,new Set(),[]),after:makeRoster(bp,getIds,give)},generatedAt:new Date().toISOString()});
       }
       if(parts[3]==='headlines') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-headlines-disabled',policy:'This legacy route depends on unverified heuristic player values or projections and cannot publish DCC intelligence.'});
+        /* LEGACY_DISABLED_headlines
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         const userById=Object.fromEntries(bundle.users.map(u=>[u.user_id,u]));
         const ownerByRoster=Object.fromEntries(bundle.rosters.map(r=>[String(r.roster_id),userById[r.owner_id]||{}]));
@@ -645,14 +663,22 @@ async function route(req, res, url) {
         }
         return json(res,200,{headlines:headlineBoard(events),generatedAt:new Date().toISOString()});
       }
+        */
+      }
       if(parts[3]==='trade-room') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-trade-room-disabled',policy:'This legacy route depends on unverified heuristic player values or projections and cannot publish DCC intelligence.'});
+        /* LEGACY_DISABLED_trade_room
         const targetRosterId=url.searchParams.get('rosterId');
         if(!targetRosterId) throw new Error('rosterId is required');
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         const candidates=tradeFinder(bundle.rosters,bundle.users,players,targetRosterId);
         return json(res,200,{targetRosterId,opportunities:tradeRoomFromCandidates(candidates),generatedAt:new Date().toISOString(),methodology:['Roster need','Starting-lineup impact','Dynasty value','Partner improvement','Roster-specific context','Trade fairness']});
       }
+        */
+      }
       if(parts[3]==='prediction-ledger') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-prediction-ledger-disabled',policy:'This legacy route depends on unverified heuristic player values or projections and cannot publish DCC intelligence.'});
+        /* LEGACY_DISABLED_prediction_ledger
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         const analyses=bundle.rosters.map(r=>({rosterId:r.roster_id,ownerId:r.owner_id,...optimizeProjected(r,players)})).sort((a,b)=>b.projectedPoints-a.projectedPoints);
         return json(res,200,{predictions:[
@@ -661,7 +687,11 @@ async function route(req, res, url) {
           {id:'gm',type:'gm',label:'GM challenge',prediction:'At least one manager will outperform the preseason model by a meaningful margin.',status:'open'}
         ],generatedAt:new Date().toISOString()});
       }
+        */
+      }
       if(parts[3]==='feed') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-feed-disabled',policy:'This legacy route depends on unverified heuristic player values or projections and cannot publish DCC intelligence.'});
+        /* LEGACY_DISABLED_feed
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         const userById=Object.fromEntries(bundle.users.map(u=>[u.user_id,u]));
         const ownerByRoster=Object.fromEntries(bundle.rosters.map(r=>[String(r.roster_id),userById[r.owner_id]||{}]));
@@ -686,7 +716,11 @@ async function route(req, res, url) {
         events.sort((a,b)=>(b.impactScore-a.impactScore)||(b.created-a.created));
         return json(res,200,{events:events.slice(0,80),generatedAt:new Date().toISOString()});
       }
+        */
+      }
       if(parts[3]==='story') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-story-disabled',policy:'This legacy route depends on unverified heuristic player values or projections and cannot publish DCC intelligence.'});
+        /* LEGACY_DISABLED_story
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         const weeks=Array.from({length:18},(_,i)=>i+1);
         const txs=(await Promise.all(weeks.map(w=>sleeper(`/league/${id}/transactions/${w}`,60000).catch(()=>[])))).flat();
@@ -705,7 +739,11 @@ async function route(req, res, url) {
         }
         return json(res,200,buildStorySnapshot(bundle,players,feed));
       }
+        */
+      }
       if(parts[3]==='transaction-feed') {
+        return json(res,410,{status:'withheld',reason:'legacy-heuristic-transaction-feed-disabled',policy:'This legacy route depends on unverified heuristic player values or projections and cannot publish DCC intelligence.'});
+        /* LEGACY_DISABLED_transaction_feed
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
         const userById=Object.fromEntries(bundle.users.map(u=>[u.user_id,u]));
         const ownerByRoster=Object.fromEntries(bundle.rosters.map(r=>[String(r.roster_id),userById[r.owner_id]||{}]));
@@ -730,6 +768,8 @@ async function route(req, res, url) {
         }
         feed.sort((a,b)=>b.created-a.created);
         return json(res,200,{transactions:feed.slice(0,100),syncedAt:new Date().toISOString(),weeks:18});
+      }
+        */
       }
       if(parts[3]==='trade' && req.method==='POST') {
         let body=''; for await (const chunk of req) body+=chunk; const payload=JSON.parse(body||'{}');
