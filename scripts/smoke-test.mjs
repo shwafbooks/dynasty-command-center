@@ -4,6 +4,7 @@ import {normalizeTeamComponents} from '../lib/component-normalization.js';
 import {runFormulaLab} from '../lib/formula-lab.js';
 import {canonicalFranchise} from '../lib/franchise-identity.js';
 import {ingestProviderSnapshots} from '../lib/provider-ingestion.js';
+import {buildStrengthAxes} from '../lib/strength-axes.js';
 
 const legacy=buildDccRosterStrength();
 assert.equal(legacy.status,'withheld');
@@ -35,5 +36,14 @@ const sameFamily=ingestProviderSnapshots({snapshots:[
  {source:'statsguy',independenceGroup:'completed-trades',asOf:'2026-09-18',players:[{playerId:'1',value:20}]}
 ],minimumIndependentSources:2});
 assert.equal(sameFamily.publicationEligible,false);
+
+const axes=buildStrengthAxes(matrix);
+assert.equal(axes.status,'ready');
+assert.equal(axes.axesPublished,true);
+assert.equal(axes.overallScorePublished,false);
+assert.equal(axes.overallRankingPublished,false);
+assert.equal(axes.provenance.replacementDoubleCounted,false);
+assert.equal(axes.teams[0].competitiveEvidence.verifiedProduction,10);
+assert.equal(axes.teams[0].dynastyAssetEvidence.lineupMarketCore,.2);
 
 console.log('DCC foundation smoke checks passed');
