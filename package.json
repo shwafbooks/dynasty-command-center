@@ -1,1 +1,1 @@
-{"name":"dynasty-command-center","version":"1.20.1","private":true,"type":"module","scripts":{"start":"node server.js","check":"node --check server.js","smoke":"node scripts/smoke-test.mjs"}}
+{"name":"dynasty-command-center","version":"1.20.1","private":true,"type":"module","scripts":{"start":"node server.js","check":"node --check server.js && node --check public/app.js && node --check public/team-intelligence.js && node --check public/trade-center.js","smoke":"node scripts/smoke-test.mjs"}}
