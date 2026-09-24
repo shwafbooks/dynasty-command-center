@@ -7,6 +7,7 @@
 /* Read-only mock trade workspace */
 .tc-section{padding-block:38px}.tc-workspace{padding:22px;border:1px solid var(--line);background:#0b111a}.tc-controls,.tc-pickers,.tc-results{display:grid;grid-template-columns:1fr 1fr;gap:16px}.tc-controls label{display:grid;gap:8px;color:var(--muted);font-size:11px}.tc-controls select{width:100%;min-width:0;padding:12px;background:#15202c;border:1px solid var(--line);color:#eef3fa;font:inherit}.tc-pickers{margin-top:18px}.tc-pickers fieldset{min-width:0;margin:0;padding:12px;border:1px solid var(--line)}.tc-pickers legend{padding:0 8px;color:var(--blue);font:11px var(--font-mono)}.tc-list{max-height:300px;overflow:auto}.tc-player{display:flex;align-items:center;gap:9px;padding:8px 4px;border-bottom:1px solid var(--line);font-size:11px;cursor:pointer}.tc-player span{flex:1}.tc-player small{color:var(--dim)}.tc-player input{accent-color:#8fbaff}.tc-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:18px}.tc-actions span{font:11px var(--font-mono);color:var(--muted)}#tc-output{margin-top:18px}.tc-disclaimer{padding:13px;border:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.6}.tc-results{margin-top:14px}.tc-result{min-width:0;padding:14px;border:1px solid var(--line);background:#111a25}.tc-result h4{margin:0;font:600 17px var(--font-display)}.tc-result h4 small{font:11px var(--font-mono);color:var(--muted)}.tc-result p{font-size:11px;color:var(--muted)}.tc-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tc-result-grid>div{min-width:0;display:grid;align-content:start;gap:6px}.tc-result-grid strong{font-size:11px;color:var(--blue)}.tc-result-grid span{font-size:10px;overflow-wrap:anywhere}@media(max-width:760px){.tc-controls,.tc-pickers,.tc-results,.tc-result-grid{grid-template-columns:1fr}.tc-workspace{padding:12px}}
 /* Live transaction wire */
+.split-section{grid-template-columns:minmax(0,1.6fr) minmax(280px,.7fr);align-items:start}
 .wire-workspace{min-height:180px}
 .wire-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0;color:var(--muted);font:500 10px var(--font-mono)}
 .wire-topline p{margin:0}
@@ -31,4 +32,5 @@
 .wire-more{margin:14px 0;padding:9px 13px;font-size:11px}
 .wire-empty,.wire-warning{padding:20px;border:1px solid var(--line);color:var(--muted);font-size:12px}
 .wire-warning{border-color:var(--signal);color:var(--ink)}
+@media(max-width:760px){.split-section{grid-template-columns:1fr}}
 @media(max-width:520px){.wire-card__teams{grid-template-columns:1fr}.wire-card__meta{align-items:flex-start}.wire-topline{align-items:flex-start;flex-direction:column}}
