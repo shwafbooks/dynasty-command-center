@@ -1,4 +1,5 @@
 import http from 'node:http';
+import transactionFeedHandler from './api/league/[leagueId]/transaction-feed.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -706,30 +707,8 @@ async function route(req, res, url) {
         return json(res,200,buildStorySnapshot(bundle,players,feed));
       }
       if(parts[3]==='transaction-feed') {
-        const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
-        const userById=Object.fromEntries(bundle.users.map(u=>[u.user_id,u]));
-        const ownerByRoster=Object.fromEntries(bundle.rosters.map(r=>[String(r.roster_id),userById[r.owner_id]||{}]));
-        const weeks=Array.from({length:18},(_,i)=>i+1);
-        const txs=(await Promise.all(weeks.map(w=>sleeper(`/league/${id}/transactions/${w}`,60000).catch(()=>[])))).flat();
-        const seen=new Set(); const feed=[];
-        for(const tx of txs){ if(!tx||seen.has(tx.transaction_id)||tx.status==='failed') continue; seen.add(tx.transaction_id);
-          const adds=tx.adds||{}, drops=tx.drops||{}; const involved=[...(tx.roster_ids||[])].map(x=>String(x));
-          const nameForRoster=rid=>ownerByRoster[String(rid)]?.display_name||ownerByRoster[String(rid)]?.username||`Roster ${rid}`;
-          const playerInfo=pid=>players[pid]||{};
-          const value=pid=>Number(dynastyValue(playerInfo(pid))||0);
-          const addList=Object.entries(adds).map(([pid,rid])=>({pid,rid,name:pname(playerInfo(pid)),value:value(pid)}));
-          const dropList=Object.entries(drops).map(([pid,rid])=>({pid,rid,name:pname(playerInfo(pid)),value:value(pid)}));
-          let kind=tx.type||'transaction'; let headline='Roster move'; let impact='routine'; let impactScore=0;
-          if(kind==='trade') { headline='Trade'; impactScore=addList.concat(dropList).reduce((a,x)=>a+x.value,0)/2; }
-          else if(kind==='waiver') { headline='Waiver claim'; impactScore=addList.reduce((a,x)=>a+x.value,0); }
-          else if(kind==='free_agent') { headline='Free-agent pickup'; impactScore=addList.reduce((a,x)=>a+x.value,0); }
-          else { headline=kind.replace(/_/g,' '); impactScore=addList.concat(dropList).reduce((a,x)=>a+x.value,0)/3; }
-          if(impactScore>=75) impact='blockbuster'; else if(impactScore>=45) impact='major'; else if(impactScore>=20) impact='significant'; else if(impactScore>=8) impact='notable';
-          const rosters=[...new Set(involved.concat(addList.map(x=>String(x.rid)),dropList.map(x=>String(x.rid))))].filter(Boolean);
-          feed.push({id:tx.transaction_id,type:kind,headline,impact,impactScore:Number(impactScore.toFixed(1)),created:tx.created||0,week:tx.leg||null,status:tx.status,rosters:rosters.map(rid=>({rosterId:rid,owner:nameForRoster(rid)})),adds:addList.slice(0,12),drops:dropList.slice(0,12),waiverBid:tx.waiver_bid??null});
-        }
-        feed.sort((a,b)=>b.created-a.created);
-        return json(res,200,{transactions:feed.slice(0,100),syncedAt:new Date().toISOString(),weeks:18});
+        const response=await transactionFeedHandler.fetch(new Request(url.toString()));
+        return json(res,response.status,await response.json());
       }
       if(parts[3]==='trade' && req.method==='POST') {
         let body=''; for await (const chunk of req) body+=chunk; const payload=JSON.parse(body||'{}');
