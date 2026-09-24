@@ -9,7 +9,7 @@ const assets=(players,picks)=>`<div class="wire-assets">${players.map(player=>`<
 function card(event,featured=false){
   const movement=event.teams.map(team=>{
     const incoming=team.receives.length||team.picksIn.length,outgoing=team.sends.length||team.picksOut.length;
-    return `<div class="wire-team"><div class="wire-team__header"><strong>${esc(team.team)}</strong><small>${esc(team.manager)}</small></div>${incoming?`<div class="wire-movement wire-movement--in"><b>IN</b>${assets(team.receives,team.picksIn)}</div>`:''}${outgoing?`<div class="wire-movement wire-movement--out"><b>OUT</b>${assets(team.sends,team.picksOut)}</div>`:''}</div>`;
+    return `<div class="wire-team"><div class="wire-team__header"><strong>${esc(team.team)}</strong><small>${esc(team.manager)}</small></div>${incoming?`<div class="wire-movement wire-movement--in"><b>IN</b>${assets(team.receives,team.picksIn)}</div>`:''}${event.type!=='trade'&&outgoing?`<div class="wire-movement wire-movement--out"><b>OUT</b>${assets(team.sends,team.picksOut)}</div>`:''}${event.type==='trade'&&!incoming?'<div class="wire-movement wire-movement--in"><b>IN</b><span class="wire-no-assets">No incoming assets recorded</span></div>':''}</div>`;
   }).join('');
   return `<article class="wire-card${featured?' wire-card--featured':''}"><div class="wire-card__meta"><span class="wire-type wire-type--${esc(event.type)}">${esc(typeLabel[event.type]||event.type)}</span><span>Week ${esc(event.week||'—')} · ${esc(stamp(event.occurredAt))}</span></div><h3>${esc(event.headline)}</h3><div class="wire-card__teams">${movement}</div>${event.waiverBid!==null?`<small class="wire-bid">Waiver bid: $${esc(event.waiverBid)}</small>`:''}</article>`;
 }
