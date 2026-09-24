@@ -22,7 +22,7 @@ function render(){
 async function load(){
   root.innerHTML='<p class="wire-empty">Syncing completed Sleeper transactions…</p>';
   try{
-    const response=await fetch(`/api/league/${window.DCC_LEAGUE_ID||'1389344338340761600'}/transaction-feed`,{cache:'no-store'}),data=await response.json();
+    const response=await fetch(`/api/league/${window.DCC_LEAGUE_ID||'1389344338340761600'}/roster-center?view=transactions`,{cache:'no-store'}),data=await response.json();
     if(!response.ok||!['ready','partial'].includes(data.status))throw Error(data.message||'Transaction feed unavailable');
     events=data.transactions||[];active='all';visible=12;
     const feature=data.latestTrade?`<div class="wire-feature-label">LATEST TRADE · VERIFIED MOVEMENT</div>${card(data.latestTrade,true)}`:'';
