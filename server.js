@@ -481,6 +481,7 @@ function rosterCenter(bundle, players) {
     const owner = usersById[roster.owner_id] || {};
     const starterOrder = new Map((roster.starters || []).map((id, index) => [String(id), index]));
     const starterIds = new Set(starterOrder.keys());
+    const reserveIds = new Set((roster.reserve || []).map(String));
     const allPlayers = (roster.players || []).map(id => playerView(id, starterIds, starterOrder));
     const sortPlayers = (left, right) => (left.starterOrder ?? 99) - (right.starterOrder ?? 99)
       || (positionOrder[left.position] ?? 99) - (positionOrder[right.position] ?? 99)
@@ -493,6 +494,7 @@ function rosterCenter(bundle, players) {
       startersSubmitted: starterIds.size > 0,
       starters: allPlayers.filter(player => player.starter).sort(sortPlayers),
       bench: allPlayers.filter(player => !player.starter).sort(sortPlayers),
+      ir: allPlayers.filter(player => reserveIds.has(player.id)).sort(sortPlayers),
       rosterSize: allPlayers.length
     };
   }).sort((left, right) => left.team.localeCompare(right.team));
