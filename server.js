@@ -491,6 +491,9 @@ function rosterCenter(bundle, players, seasonStats = {}) {
       || left.name.localeCompare(right.name);
     return {
       rosterId: roster.roster_id,
+      ownerId: roster.owner_id,
+      avatar: owner.metadata?.avatar || (owner.avatar ? `https://sleepercdn.com/avatars/${owner.avatar}` : null),
+      record: {wins:roster.settings?.wins||0,losses:roster.settings?.losses||0,ties:roster.settings?.ties||0},
       team: owner.metadata?.team_name || owner.display_name || owner.username || `Roster ${roster.roster_id}`,
       manager: owner.display_name || owner.username || 'Unknown manager',
       username: owner.username || null,
