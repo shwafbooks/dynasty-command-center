@@ -13,6 +13,7 @@ function card(event,featured=false){
   }).join('');
   return `<article class="wire-card${featured?' wire-card--featured':''}"><div class="wire-card__meta"><span class="wire-type wire-type--${esc(event.type)}">${esc(typeLabel[event.type]||event.type)}</span><span>Week ${esc(event.week||'—')} · ${esc(stamp(event.occurredAt))}</span></div><h3>${esc(event.headline)}</h3><div class="wire-card__teams">${movement}</div>${event.waiverBid!==null?`<small class="wire-bid">Waiver bid: $${esc(event.waiverBid)}</small>`:''}</article>`;
 }
+window.DCCTransactionCards={render:event=>card(event)};
 function render(){
   const filtered=active==='all'?events:events.filter(event=>event.type===active);
   const list=root.querySelector('#wire-list');
