@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {buildWeeklyRecap,fetchWeeklyRecap} from '../lib/weekly-recap.js';
+const users=[1,2,3,4].map(i=>({user_id:`u${i}`,display_name:`Manager ${i}`}));
+const rosters=users.map((u,i)=>({roster_id:i+1,owner_id:u.user_id}));
+const rows=[100,99,160,80].map((points,i)=>({roster_id:i+1,matchup_id:i<2?1:2,points,starters:[`${i+1}`,'0'],starters_points:[20+i,200]}));
+const players=Object.fromEntries([1,2,3,4].map(i=>[i,{first_name:'Player',last_name:String(i),position:'QB'}]));
+const recap=buildWeeklyRecap(rows,users,rosters,players,2026,4);
+assert.equal(recap.status,'complete');assert.equal(recap.games.length,2);
+assert.equal(recap.awards.biggestWin.winner.rosterId,3);assert.equal(recap.awards.closestFinish.margin,1);
+assert.equal(recap.awards.topTeams[0].rosterId,3);assert.equal(recap.awards.topPlayers[0].id,'4');
+assert.equal(recap.games[0].topPlayer.id,'2');
+const tied=structuredClone(rows);tied[1].points=100;assert.equal(buildWeeklyRecap(tied,users,rosters,players,2026,4).awards.closestFinish.tie,true);
+assert.equal(buildWeeklyRecap(rows.slice(1),users,rosters,players,2026,4).status,'unavailable');
+assert.equal(buildWeeklyRecap([{...rows[0],points:null},...rows.slice(1)],users,rosters,players,2026,4).status,'unavailable');
+const pending=await fetchWeeklyRecap('id',5,async path=>path==='/state/nfl'?{season:2026,week:5}:{season:2026,status:'in_season'});
+assert.equal(pending.status,'pending');assert.deepEqual(pending.availableWeeks,[4,3,2,1]);
+console.log('Weekly recaps: awards, matchup leaders, ties, invalid data, and unfinished weeks passed.');
