@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {optimize,evaluateTrade,partners,roster} from '../public/trade-engine.js';
+const p=(id,position)=>({id,name:id,position,nflTeam:id});
+const players=[p('q','QB'),p('r','RB'),p('w','WR'),p('q2','QB')],c={projections:{q:20,r:25,w:15,q2:18},games:{},injuries:{}};
+const o=optimize(players,['QB','FLEX','SUPER_FLEX'],c);assert.equal(o.total,63);assert.equal(new Set(o.assigned.map(x=>x.player.id)).size,3);assert.equal(o.assigned.find(x=>x.slot==='SUPER_FLEX').player.id,'q2');
+const bye=structuredClone(c);bye.games.q={state:'bye'};assert.equal(optimize(players,['QB','FLEX','SUPER_FLEX'],bye).total,58);
+const out=structuredClone(c);out.injuries.q='Out';assert.equal(optimize(players,['QB','FLEX','SUPER_FLEX'],out).excluded[0].reason,'Out');assert.equal(optimize(players,['QB'],c,new Set(['q','q2'])).open,1);
+assert.equal(optimize(players,['QB','FLEX','SUPER_FLEX'],{projections:{q:20},games:{}}).total,null);
+const a={rosterId:1,starters:[p('ar','RB'),p('aw','WR')],bench:[p('aw2','WR')],ir:[]},b={rosterId:2,starters:[p('br','RB'),p('bw','WR')],bench:[p('br2','RB')],ir:[]},context={projections:{ar:8,aw:24,aw2:20,br:25,br2:18,bw:7},games:{},injuries:{}};
+const result=evaluateTrade(a,b,['aw2'],['br2'],['RB','WR'],context);assert.deepEqual(result.map(x=>x.delta),[10,13]);assert.equal(result[0].incoming[0].id,'br2');assert.equal(result[0].sent[0].id,'aw2');assert.equal(roster(a).length,3);
+assert.equal(partners(a,[a,b],['RB','WR'],context).length,1);assert.equal(partners(a,[a,b],['RB','WR'],{projections:{}}).length,0);
+assert.throws(()=>evaluateTrade(a,b,['unknown'],[],['RB','WR'],context));
+const multi=evaluateTrade(a,b,['ar','aw2'],['br2'],['RB','WR'],context);assert.equal(multi[0].rosterCount,2);assert.equal(multi[1].rosterCount,4);assert.equal(multi[0].depth.find(x=>x.position==='WR').after,1);
+console.log('Trade engine: exact flex matching, unique starters, availability, missing projections, two-sided trades, depth and partner fit passed.');

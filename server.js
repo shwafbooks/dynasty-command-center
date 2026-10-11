@@ -477,6 +477,7 @@ function rosterCenter(bundle, players, seasonStats = {}) {
       position: player.fantasy_positions?.[0] || player.position || '—',
       nflTeam: player.team || '—',
       status: player.status || null,
+      injuryStatus: player.injury_status || null,
       sleeperPositionRank: Number.isInteger(positionRank) && positionRank > 0 ? positionRank : null,
       starter: starterIds.has(String(playerId)),
       starterOrder: starterOrder.get(String(playerId)) ?? null
@@ -568,6 +569,7 @@ async function route(req, res, url) {
     if (parts[0]==='api' && parts[1]==='league' && parts[2]) {
       const id=decodeURIComponent(parts[2]) || DEFAULT_LEAGUE_ID;
       if(parts.length===3) return json(res,200,await leagueBundle(id));
+      if(parts[3]==='roster-center' && url.searchParams.get('view')==='trade-context') {const bundle=await leagueBundle(id),state=await sleeper('/state/nfl',60000),week=Number(state.week),season=bundle.league.season;const ready=String(state.season)===String(season)&&state.season_type==='regular'&&week>=1&&week<=18;const context=ready?await fetchMatchupContext(season,week,bundle.league.scoring_settings):{games:{},projections:{},injuries:{}};return json(res,200,{...context,season,week:ready?week:null,slots:(bundle.league.roster_positions||[]).filter(s=>s!=='BN'),rosterLimit:(bundle.league.roster_positions||[]).length});}
       if(parts[3]==='roster-center' && url.searchParams.get('view')==='playoff-race') return json(res,200,await fetchPlayoffRace(id,sleeper));
       if(parts[3]==='roster-center' && url.searchParams.get('view')==='recap') return json(res,200,await fetchWeeklyRecap(id,url.searchParams.get('week'),sleeper));
       if(parts[3]==='roster-center' && url.searchParams.get('view')==='matchup-context') { const bundle=await leagueBundle(id),week=Number(url.searchParams.get('week')); if(!Number.isInteger(week)||week<1||week>18)return json(res,400,{error:'Invalid week'});const key=`matchup-context:${id}:${week}`,hit=cache.get(key);if(hit&&Date.now()-hit.at<60000)return json(res,200,hit.data);const data=await fetchMatchupContext(bundle.league.season,week,bundle.league.scoring_settings);cache.set(key,{at:Date.now(),data});return json(res,200,data); }
