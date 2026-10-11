@@ -1,0 +1,6 @@
+import assert from 'node:assert/strict';
+import {buildMatchupContext} from '../lib/matchup-context.js';
+const board={season:{year:2026},week:{number:5,teamsOnBye:[{abbreviation:'KC'}]},events:[{date:'2026-10-11T17:00Z',status:{type:{state:'in',shortDetail:'Q3'}},competitions:[{competitors:[{team:{abbreviation:'WSH'}},{team:{abbreviation:'JAC'}}]}]},{status:{type:{completed:true,state:'post'}},competitions:[{competitors:[{team:{abbreviation:'NE'}}]}]}]};
+const proj=[{player_id:'1',stats:{pass_yd:250,pass_td:2,pass_int:1},player:{}},{player_id:'2',stats:{rec:4,rec_yd:70,rec_td:1},player:{injury_status:'Out'}},{player_id:'3',stats:{gp:1}}];
+const scoring={pass_yd:.04,pass_td:4,pass_int:-1,rec:1,rec_yd:.1,rec_td:6};
+const c=buildMatchupContext(board,proj,scoring,2026,5);assert.equal(c.games.WAS.state,'playing');assert.equal(c.games.JAX.state,'playing');assert.equal(c.games.NE.state,'final');assert.equal(c.games.KC.state,'bye');assert.equal(c.projections['1'],17);assert.equal(c.projections['2'],17);assert.equal(c.projections['3'],undefined);assert.equal(c.injuries['2'],'Out');assert.equal(buildMatchupContext(board,proj,scoring,2026,6).scheduleAvailable,false);assert.equal(buildMatchupContext(null,[],scoring,2026,5).projectionsAvailable,false);console.log('Matchup context: schedule validation, aliases, game state, league scoring, missing projections passed.');
