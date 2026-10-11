@@ -15,3 +15,10 @@ assert.equal(buildWeeklyRecap([{...rows[0],points:null},...rows.slice(1)],users,
 const pending=await fetchWeeklyRecap('id',5,async path=>path==='/state/nfl'?{season:2026,week:5}:{season:2026,status:'in_season'});
 assert.equal(pending.status,'pending');assert.deepEqual(pending.availableWeeks,[4,3,2,1]);
 console.log('Weekly recaps: awards, matchup leaders, ties, invalid data, and unfinished weeks passed.');
+
+const fullWeek=Array.from({length:10},(_,i)=>({...rows[i%4],roster_id:i+1,matchup_id:Math.floor(i/2)+1,points:i%2?100:115}));
+const many=buildWeeklyRecap(fullWeek,users,rosters,players,2026,4);
+assert.equal(new Set(many.games.map(g=>g.headline)).size,5);
+assert.deepEqual(many.games.map(g=>g.headline),buildWeeklyRecap(fullWeek,users,rosters,players,2026,4).games.map(g=>g.headline));
+assert.notEqual(many.games[0].headline,buildWeeklyRecap(fullWeek,users,rosters,players,2026,3).games[0].headline);
+console.log('Recap headlines: unique within a week, stable on reload, and rotate between weeks.');
