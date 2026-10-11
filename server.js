@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {fetchPlayoffRace} from './lib/playoff-race.js';
 import {fetchWeeklyRecap} from './lib/weekly-recap.js';
 import {fetchMatchupContext} from './lib/matchup-context.js';
 import {fetchLeagueHistory} from './lib/league-history.js';
@@ -567,6 +568,7 @@ async function route(req, res, url) {
     if (parts[0]==='api' && parts[1]==='league' && parts[2]) {
       const id=decodeURIComponent(parts[2]) || DEFAULT_LEAGUE_ID;
       if(parts.length===3) return json(res,200,await leagueBundle(id));
+      if(parts[3]==='roster-center' && url.searchParams.get('view')==='playoff-race') return json(res,200,await fetchPlayoffRace(id,sleeper));
       if(parts[3]==='roster-center' && url.searchParams.get('view')==='recap') return json(res,200,await fetchWeeklyRecap(id,url.searchParams.get('week'),sleeper));
       if(parts[3]==='roster-center' && url.searchParams.get('view')==='matchup-context') { const bundle=await leagueBundle(id),week=Number(url.searchParams.get('week')); if(!Number.isInteger(week)||week<1||week>18)return json(res,400,{error:'Invalid week'});const key=`matchup-context:${id}:${week}`,hit=cache.get(key);if(hit&&Date.now()-hit.at<60000)return json(res,200,hit.data);const data=await fetchMatchupContext(bundle.league.season,week,bundle.league.scoring_settings);cache.set(key,{at:Date.now(),data});return json(res,200,data); }
       if(parts[3]==='roster-center' && url.searchParams.get('view')==='history') return json(res,200,await fetchLeagueHistory(id,sleeper));
