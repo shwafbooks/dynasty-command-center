@@ -103,3 +103,15 @@
 .roster-ir__heading span{color:var(--muted);font-size:12px}
 .roster-ir .player-list{padding:4px 12px 10px}
 .roster-ir .empty{font-size:12px}
+
+/* Sleeper-style position badges and source-provided season ranks */
+.player[data-position="QB"]{--position-color:#c18bff}
+.player[data-position="RB"]{--position-color:#59d7be}
+.player[data-position="WR"]{--position-color:#7daaff}
+.player[data-position="TE"]{--position-color:#f7ac70}
+.player[data-position="K"]{--position-color:#efd66b}
+.player[data-position="DEF"],.player[data-position="DST"]{--position-color:#ef8799}
+.player .position{display:grid;place-items:center;min-height:27px;padding:3px;border:1px solid var(--position-color,var(--line-light));color:var(--position-color,var(--blue));border-radius:5px;font-weight:700}
+.player-identity{display:grid;gap:3px;min-width:0}
+.player-season-rank{font-size:11px;color:var(--position-color,var(--muted));line-height:1.3}
+.player--visual{min-height:61px}

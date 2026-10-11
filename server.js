@@ -461,17 +461,19 @@ async function leagueBundle(id) {
 // endpoint.  Starter flags come directly from Sleeper's roster `starters` field;
 // when no lineup has been submitted (common before the season), that uncertainty
 // is surfaced instead of substituting an optimized projected lineup.
-function rosterCenter(bundle, players) {
+function rosterCenter(bundle, players, seasonStats = {}) {
   const usersById = Object.fromEntries(bundle.users.map(user => [user.user_id, user]));
   const playerView = (playerId, starterIds, starterOrder) => {
     const player = players[playerId];
     if (!player) return { id: String(playerId), name: `Unknown player (${playerId})`, position: '—', nflTeam: '—', starter: starterIds.has(String(playerId)) };
+    const positionRank = Number(seasonStats[playerId]?.pos_rank_ppr);
     return {
       id: String(playerId),
       name: pname(player) || `Unknown player (${playerId})`,
       position: player.fantasy_positions?.[0] || player.position || '—',
       nflTeam: player.team || '—',
       status: player.status || null,
+      sleeperPositionRank: Number.isInteger(positionRank) && positionRank > 0 ? positionRank : null,
       starter: starterIds.has(String(playerId)),
       starterOrder: starterOrder.get(String(playerId)) ?? null
     };
@@ -509,6 +511,7 @@ function rosterCenter(bundle, players) {
     },
     teams,
     source: 'Sleeper read-only API',
+    rankSource: 'Sleeper regular-season PPR positional rank; unavailable ranks are omitted',
     syncedAt: bundle.syncedAt
   };
 }
@@ -564,7 +567,8 @@ async function route(req, res, url) {
       }
       if(parts[3]==='roster-center') {
         const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]);
-        return json(res,200,rosterCenter(bundle,players));
+        const seasonStats=await sleeper(`/stats/nfl/regular/${encodeURIComponent(bundle.league.season)}`,300000).catch(()=>({}));
+        return json(res,200,rosterCenter(bundle,players,seasonStats));
       }
       if(parts[3]==='analysis') {
         return json(res,410,{status:'withheld',reason:'legacy-heuristic-analysis-disabled',replacement:`/api/league/${id}/team-component-matrix/1`,policy:'Unverified search-rank projections cannot publish DCC roster scores or rankings.'});
