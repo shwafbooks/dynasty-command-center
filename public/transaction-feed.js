@@ -26,6 +26,7 @@ async function load(){
   try{
     const response=await fetch(`/api/league/${window.DCC_LEAGUE_ID||'1389344338340761600'}/roster-center?view=transactions`,{cache:'no-store'}),data=await response.json();
     if(!response.ok||!['ready','partial'].includes(data.status))throw Error(data.message||'Transaction feed unavailable');
+    window.DCCTransactionData=data;dispatchEvent(new Event('dcc:news'));
     events=data.transactions||[];active='all';visible=12;
     const feature=data.latestTrade?`<div class="wire-feature-label">LATEST TRADE · VERIFIED MOVEMENT</div>${card(data.latestTrade,true)}`:'';
     const coverage=data.status==='partial'?'<p class="wire-warning">Some Sleeper weeks could not be loaded. This feed may be incomplete.</p>':'';
