@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {buildLeagueHistory,fetchLeagueHistory} from '../lib/league-history.js';
+const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/league-history.json',import.meta.url)));
+const data=buildLeagueHistory(fixture);
+assert.equal(data.completedSeasons,2);
+assert.deepEqual(data.totals,{buyIns:500,winnings:500});
+assert.deepEqual(data.seasons.find(s=>s.year==='2025').podium.map(p=>p.manager),['stuffy229','shwaf','BillClintonArkansas']);
+assert.deepEqual(data.seasons.find(s=>s.year==='2024').podium.map(p=>p.manager),['shwaf','stuffy229','jackig']);
+assert.equal(data.career.find(c=>c.manager==='stuffy229').net,175);
+assert.equal(data.career.find(c=>c.manager==='shwaf').wins,17);
+assert.equal(data.records.points.value,2032.7);
+assert.equal(data.seasons.find(s=>!s.complete).standings.every(r=>r.finish===null&&r.buyIn===0),true);
+for(const s of data.seasons.filter(s=>s.complete))assert.deepEqual(s.standings.map(r=>r.finish),[1,2,3,4,5,6,7,8,9,10]);
+const incomplete=structuredClone(fixture);incomplete[1].winners=incomplete[1].winners.filter(g=>g.p!==1);assert.equal(buildLeagueHistory(incomplete).career.find(c=>c.manager==='stuffy229').net,null);
+const renamed=structuredClone(fixture);renamed[2].users.forEach(u=>u.display_name='Changed name');assert.equal(buildLeagueHistory(renamed).career.length,10);
+let calls=0;const partial=await fetchLeagueHistory('current',async p=>{calls++;if(p==='/league/current')return {...fixture[0].league,league_id:'current',previous_league_id:'missing'};if(p==='/league/missing')throw new Error();if(p.endsWith('/rosters'))return fixture[0].rosters;if(p.endsWith('/users'))return fixture[0].users;return [];});assert.equal(partial.warnings.length,1);assert.equal(partial.seasons.length,1);
+console.log('League history: podiums, placements, decimal points, career identity, payouts, partial failures passed.');

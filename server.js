@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {fetchLeagueHistory} from './lib/league-history.js';
 import transactionFeedHandler from './lib/transaction-feed-route.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -561,6 +562,7 @@ async function route(req, res, url) {
     if (parts[0]==='api' && parts[1]==='league' && parts[2]) {
       const id=decodeURIComponent(parts[2]) || DEFAULT_LEAGUE_ID;
       if(parts.length===3) return json(res,200,await leagueBundle(id));
+      if(parts[3]==='roster-center' && url.searchParams.get('view')==='history') return json(res,200,await fetchLeagueHistory(id,sleeper));
       if(parts[3]==='roster-center' && url.searchParams.get('view')==='transactions') {
         const response=await transactionFeedHandler.fetch(new Request(url.toString()));
         return json(res,response.status,await response.json());
