@@ -1,11 +1,11 @@
 import {roster,pid,optimize} from './trade-engine.js';
-export function dynastyTrade(a,b,sendA,sendB,slots,markets){
- const pools=[roster(a),roster(b)],sets=[new Set(sendA),new Set(sendB)],sent=pools.map((p,i)=>p.filter(x=>sets[i].has(pid(x)))),after=pools.map((p,i)=>[...p.filter(x=>!sets[i].has(pid(x))),...sent[1-i]]),sources=[];
- for(const source of markets.sources||[]){const values=source.values||{},sum=players=>players.every(p=>Number.isFinite(values[pid(p)]))?players.reduce((n,p)=>n+values[pid(p)],0):null;
+export function dynastyTrade(a,b,sendA,sendB,slots,markets,picksA=[],picksB=[]){
+ const pools=[roster(a),roster(b)],sets=[new Set([...sendA,...picksA.map(pid)]),new Set([...sendB,...picksB.map(pid)])],sent=pools.map((p,i)=>[...p.filter(x=>sets[i].has(pid(x))),...(i?picksB:picksA)]),after=pools.map((p,i)=>[...p.filter(x=>!sets[i].has(pid(x))),...sent[1-i].filter(p=>p.position!=='PICK')]),sources=[];
+ for(const source of markets.sources||[]){const values={...source.values};for(const pick of [...picksA,...picksB]){const value=source.pickValues?.[`${pick.season}:${pick.round}:${pick.scenario||'generic'}`];if(Number.isFinite(value))values[pid(pick)]=value;}const sum=players=>players.every(p=>Number.isFinite(values[pid(p)]))?players.reduce((n,p)=>n+values[pid(p)],0):null;
  const totals=sent.map(sum),complete=totals.every(x=>x!=null),gap=complete?totals[1]-totals[0]:null,relative=complete?(totals[0]+totals[1]?Math.abs(gap)/((totals[0]+totals[1])/2):0):null;
  const core=players=>optimize(players.map(p=>({...p,injuryStatus:null})),slots,{projections:values,games:{},injuries:{}});
  const beforeCore=pools.map(core),afterCore=after.map(core),deltaCore=beforeCore.map((x,i)=>x.total!=null&&afterCore[i].total!=null?afterCore[i].total-x.total:null);
- sources.push({...source,totals,gap,complete,relative,vote:!complete?'missing':relative<=.1?'balanced':gap>0?'a':'b',core:deltaCore,coreBefore:beforeCore,coreAfter:afterCore,missing:sent.flat().filter(p=>!Number.isFinite(values[pid(p)])).map(p=>p.name)});
+ sources.push({...source,values,totals,gap,complete,relative,vote:!complete?'missing':relative<=.1?'balanced':gap>0?'a':'b',core:deltaCore,coreBefore:beforeCore,coreAfter:afterCore,missing:sent.flat().filter(p=>!Number.isFinite(values[pid(p)])).map(p=>p.name)});
  }
  const usable=sources.filter(s=>s.complete),aVotes=usable.filter(s=>s.vote==='a').length,bVotes=usable.filter(s=>s.vote==='b').length;
  const sides=[a,b].map((t,i)=>{const favor=i===0?aVotes:bVotes,against=i===0?bVotes:aVotes,coreUp=sources.filter(s=>s.core[i]>0).length,coreDown=sources.filter(s=>s.core[i]<0).length;return {team:t,market:favor>against?'Value gained':against>favor?'Value given up':usable.length?'Markets close or split':'Market coverage incomplete',core:coreUp>coreDown?'Stronger dynasty core':coreDown>coreUp?'Dynasty core weakened':sources.some(s=>s.core[i]!=null)?'Core largely preserved':'Core coverage incomplete',incoming:sent[1-i],outgoing:sent[i]};});
