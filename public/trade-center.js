@@ -28,7 +28,7 @@ const sourceNames={fantasycalc:'FantasyCalc',statsguy:'Stats Guy Fantasy',dynast
 const sourceUrls={fantasycalc:'https://fantasycalc.com/',statsguy:'https://statsguyfantasy.com/',dynastyprocess:'https://dynastyprocess.com/'};
 function futureView(){
  if(markets.status==='loading')return '<div class="tl-future"><p class="kicker">DYNASTY OUTLOOK</p><h3>Loading the dynasty markets…</h3></div>';
- const d=dynastyTrade(team(a),team(b),sendA,sendB,context.slots,markets),v=marketVerdict(d),favored=v.favored==='a'?team(a):v.favored==='b'?team(b):null;
+ const d=dynastyTrade(team(a),team(b),sendA,sendB,context.slots,markets,selectedPicks('a'),selectedPicks('b')),v=marketVerdict(d),favored=v.favored==='a'?team(a):v.favored==='b'?team(b):null;
  const title=favored?`${favored.manager} is favored`:v.balanced?'A balanced dynasty trade':v.total?'The markets are split':'Not enough market coverage';
  const reason=favored?`${v.support} of ${v.total} markets favor ${favored.manager}${v.split?' · Sources disagree':''}`:v.balanced?'All covered markets are within 10%':'Compare each market below';
  const best=[...new Map(d.bestAsset.map(s=>[s.name+'|'+s.receives,{...s,sources:d.bestAsset.filter(x=>x.name===s.name&&x.receives===s.receives).map(x=>sourceNames[x.source])}])).values()];
