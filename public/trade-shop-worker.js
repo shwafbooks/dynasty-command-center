@@ -1,0 +1,2 @@
+import {shopTeam,rankShopOffers} from './trade-shop.js';
+self.onmessage=event=>{const args=event.data,others=args.teams.filter(t=>t.rosterId!==args.own.rosterId),rows=[];try{for(let i=0;i<others.length;i++){rows.push(...shopTeam({...args,other:others[i],protectedIds:new Set(args.protectedIds)}));self.postMessage({type:'progress',done:i+1,total:others.length});}self.postMessage({type:'complete',offers:rankShopOffers(rows)});}catch{self.postMessage({type:'error'});}};
