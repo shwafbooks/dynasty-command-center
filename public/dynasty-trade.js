@@ -12,3 +12,4 @@ export function dynastyTrade(a,b,sendA,sendB,slots,markets){
  const best=sources.filter(s=>s.complete).map(s=>{const top=sent.flat().sort((x,y)=>(s.values[pid(y)]||0)-(s.values[pid(x)]||0))[0];return {source:s.source,name:top?.name,receives:sets[0].has(pid(top||{}))?b.manager:a.manager};});
  return {sources,sides,bestAsset:best,usable:usable.length,disagreement:aVotes>0&&bVotes>0,consolidation:sent[0].length!==sent[1].length&&sent.every(x=>x.length>0)};
 }
+export function marketVerdict(d){const a=d.sources.filter(s=>s.vote==='a').length,b=d.sources.filter(s=>s.vote==='b').length,balanced=d.sources.filter(s=>s.vote==='balanced').length,total=a+b+balanced;return {favored:a>b?'a':b>a?'b':null,support:Math.max(a,b),total,split:a>0&&b>0,balanced:total>0&&!a&&!b};}
