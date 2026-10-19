@@ -13,14 +13,14 @@ const offers=buildOffers(args).offers;assert(offers.length>0);assert(offers.ever
 const first=offers[0],qargs={dynasty:first.dynasty,weekly:first.weekly,assetsA:first.assets,assetsB:args.targets,context};
 assert(assessOffer(qargs).eligible);
 assert(!assessOffer({...qargs,dynasty:{sources:first.dynasty.sources.map(s=>({...s,relative:.3}))}}).eligible);
-assert(!assessOffer({...qargs,dynasty:{sources:first.dynasty.sources.map(s=>({...s,core:[10,-50]}))}}).eligible);
+assert.equal(assessOffer({...qargs,dynasty:{sources:first.dynasty.sources.map(s=>({...s,core:[10,-50]}))}}).tier,'negotiation');
 assert(!assessOffer({...qargs,goalB:'Contend',weekly:first.weekly.map((s,i)=>i?{...s,delta:null}:s)}).eligible);
-assert(!assessOffer({...qargs,context:{rosterLimit:1}}).eligible);
+const crowded=assessOffer({...qargs,context:{rosterLimit:1}});assert(crowded.eligible);assert.equal(crowded.tier,'negotiation');assert(crowded.sides.some(s=>s.drops>0));
 assert(!assessOffer({...qargs,weekly:first.weekly.map((s,i)=>i?{...s,after:{...s.after,open:1}}:s)}).eligible);
 const pick={id:'pick',position:'PICK'},capitalSource={source:'a',complete:true,relative:0,core:[10,-50],values:{pick:100,bw:100}};
 const capital={...qargs,dynasty:{sources:[capitalSource]},assetsA:[pick],assetsB:args.targets,goalB:'Rebuild'};
 assert(assessOffer(capital).eligible);assert.equal(assessOffer(capital).coverage,'Single-source pick estimate');
-assert(!assessOffer({...capital,goalB:'Balanced'}).eligible);
+const balancedCapital=assessOffer({...capital,goalB:'Balanced'});assert(balancedCapital.eligible);assert.equal(balancedCapital.tier,'negotiation');assert.match(balancedCapital.sides[1].text,/core decreases/);
 assert(!assessOffer({...capital,dynasty:{sources:[{...capitalSource,values:{pick:10,bw:100}}]}}).eligible);
 const fc=parseFantasyCalcValues([null,'',0].map((value,i)=>({value,player:{name:'P'+i,position:'QB',sleeperId:String(i)}})));assert.equal(fc.players.length,1);assert.equal(fc.players[0].value,0);
 const sg=parseStatsGuyPlayers({players:[null,'',0].map((v,i)=>({id:String(i+1),position:'QB',value:{sf_dynasty:v}}))});assert.equal(sg.players.length,1);
@@ -35,3 +35,10 @@ console.log('Market audit: stale/future dates, SF compatibility, requested 1QB s
 assert(!assessOffer({...qargs,goalB:'Contend',weekly:first.weekly.map((s,i)=>i?{...s,delta:.2}:s)}).eligible);assert(assessOffer({...qargs,goalB:'Contend'}).eligible);
 
 assert(!assessOffer({...capital,assetsA:[pick,{id:'filler',position:'WR'}],dynasty:{sources:[{...capitalSource,core:[10,-5],values:{pick:10,filler:90,bw:100}}]}}).eligible);
+
+// Regression: a market-valued starter must have pick returns without forcing a rebuild plan.
+const pickens=p('pickens','WR'),seller={rosterId:8,starters:[pickens],bench:[p('replacement','WR')]},buyer={rosterId:3,starters:[p('buyer-wr','WR')],bench:[]},firstPick={id:'pick:2027:1:3',position:'PICK',name:'2027 first',season:2027,round:1,ownerRosterId:3};
+const pickMarkets={sources:[{source:'fc',values:{pickens:4000,replacement:2000,'buyer-wr':1000},pickValues:{'2027:1:generic':4000}}],picks:[firstPick]};
+const returns=buildOffers({a:buyer,b:seller,targets:[pickens],markets:pickMarkets,slots:['WR'],context:{projections:{pickens:14,replacement:8,'buyer-wr':5},games:{}}});
+assert(returns.offers.some(o=>o.assets.some(p=>p.id===firstPick.id)));assert(returns.offers.every(o=>o.quality.tier==='negotiation'));assert(returns.offers.every(o=>o.quality.coverage==='Single-source pick estimate'));assert(returns.offers.every(o=>o.quality.sides[1].text.includes('decreases')));assert(returns.diagnostics.marketFits>0);
+console.log('Shopping regression: balanced strategy retains valued pick returns with explicit starting-core tradeoffs.');

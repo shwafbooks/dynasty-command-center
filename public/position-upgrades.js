@@ -11,4 +11,4 @@ export function positionUpgradeOffers({own,other,position,markets,slots,context,
  if(improves)out.push({...offer,other,target,position,send:offer.assets,receive:[target]});}
  }return out;
 }
-export function rankUpgrades(rows){const used=new Set(),teams=new Map(),out=[];for(const o of [...rows].sort((a,b)=>b.coreGain-a.coreGain||a.score-b.score)){const id=pid(o.target);if(used.has(id)||(teams.get(o.other.rosterId)||0)>=2)continue;used.add(id);teams.set(o.other.rosterId,(teams.get(o.other.rosterId)||0)+1);out.push(o);if(out.length===6)break;}return out;}
+export function rankUpgrades(rows){const used=new Set(),teams=new Map(),out=[];for(const o of [...rows].sort((a,b)=>b.quality.score-a.quality.score||b.coreGain-a.coreGain||a.score-b.score)){const id=pid(o.target);if(used.has(id)||(teams.get(o.other.rosterId)||0)>=2)continue;used.add(id);teams.set(o.other.rosterId,(teams.get(o.other.rosterId)||0)+1);out.push(o);if(out.length===6)break;}return out;}
