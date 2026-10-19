@@ -7,13 +7,13 @@ export function assessOffer({dynasty,weekly,assetsA,assetsB,goalA='Balanced',goa
  if(sources.length<(hasPicks?1:2))return reject('insufficient-corroboration');
  if(sources.some(s=>s.relative>.1+1e-9))return reject('market-gap');
  const sides=[assetsA,assetsB].map((outgoing,i)=>{
-  const incoming=i?assetsA:assetsB,goal=i?goalB:goalA,cores=sources.map(s=>s.core[i]),known=cores.every(Number.isFinite),preserved=known&&cores.every(n=>n>=-.01),improved=preserved&&cores.some(positive),delta=weekly[i]?.delta;
+  const incoming=i?assetsA:assetsB,goal=i?goalB:goalA,cores=sources.map(s=>s.core[i]),known=cores.every(Number.isFinite),preserved=known&&cores.every(n=>n>=-1e-9),improved=preserved&&cores.some(n=>n>1e-9),delta=weekly[i]?.delta;
   const after=weekly[i]?.after,before=weekly[i]?.before,over=context.rosterLimit&&weekly[i]?.rosterCount-(weekly[i]?.team?.ir?.length||0)>context.rosterLimit;
   if(over||after?.open>before?.open)return{eligible:false,reason:over?'roster-capacity':'lineup-hole'};
-  const picks=incoming.filter(p=>p.position==='PICK'),capital=known&&picks.length>0&&sources.every(s=>picks.every(p=>Number.isFinite(s.values[pid(p)]))&&picks.reduce((n,p)=>n+s.values[pid(p)],0)>=Math.max(.01,-s.core[i]));
+  const picks=incoming.filter(p=>p.position==='PICK'),capital=known&&picks.length>0&&sources.every(s=>picks.every(p=>Number.isFinite(s.values[pid(p)]))&&picks.reduce((n,p)=>n+s.values[pid(p)],0)>=Math.max(.01,-s.core[i],incoming.reduce((n,p)=>n+s.values[pid(p)],0)*.5));
   const weeklyGain=positive(delta),strongest=sources.every(s=>Math.max(0,...incoming.map(p=>s.values[pid(p)]))>Math.max(0,...outgoing.map(p=>s.values[pid(p)])));
-  if(goal==='Contend')return{eligible:weeklyGain,reason:'contend',text:'Improves the projected starting lineup',weekly:delta};
-  if(goal==='Rebuild'&&capital)return{eligible:true,reason:'capital',text:'Adds valued draft capital to offset the starting-core cost',weekly:delta};
+  if(goal==='Contend'){const required=Math.max(2,Number(weekly[i]?.before?.total||0)*.02);return{eligible:Number.isFinite(delta)&&delta>=required,reason:'contend',text:`Adds ${Number(delta||0).toFixed(1)} projected points this week`,weekly:delta};}
+  if(goal==='Rebuild'&&capital)return{eligible:true,reason:'capital',text:'Receives a pick-led return covering the dynasty starting-core cost',weekly:delta};
   if(goal==='Rebuild'&&strongest&&preserved)return{eligible:true,reason:'consolidation',text:'Consolidates into the higher-valued asset',weekly:delta};
   return{eligible:improved||(preserved&&weeklyGain),reason:improved?'core':weeklyGain?'weekly':'no-roster-benefit',text:improved?'Improves the dynasty starting core':weeklyGain?'Improves the weekly lineup while preserving dynasty core':'No supported roster benefit',weekly:delta};
  });

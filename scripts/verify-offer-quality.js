@@ -31,3 +31,7 @@ console.log('Offer quality: mutual roster fit, source corroboration, scale isola
 const now=Date.parse('2026-10-19T18:00:00Z');assert.equal(tradeSnapshotProblem({source:'dynastyprocess',asOf:'2026-10-16'},{now}),null);assert(tradeSnapshotProblem({source:'a',asOf:'2026-09-01'},{now}));assert(tradeSnapshotProblem({source:'a',asOf:'2026-11-01'},{now}));assert(tradeSnapshotProblem({source:'statsguy',asOf:'2026-10-19'},{now,numQbs:1}));
 const feeds=await fetchLiveMarketSnapshots({numQbs:1,fetchImpl:async url=>({ok:true,json:async()=>String(url).includes('fantasycalc')?[]:{players:[]},text:async()=> 'player,pos,value_1qb,value_2qb,scrape_date\nTest,QB,50,500,2026-10-19'})});assert.equal(feeds.snapshots.find(s=>s.source==='dynastyprocess').format,'1qb');assert.equal(feeds.snapshots.find(s=>s.source==='dynastyprocess').players[0].value,50);
 console.log('Market audit: stale/future dates, SF compatibility, requested 1QB scale passed.');
+
+assert(!assessOffer({...qargs,goalB:'Contend',weekly:first.weekly.map((s,i)=>i?{...s,delta:.2}:s)}).eligible);assert(assessOffer({...qargs,goalB:'Contend'}).eligible);
+
+assert(!assessOffer({...capital,assetsA:[pick,{id:'filler',position:'WR'}],dynasty:{sources:[{...capitalSource,core:[10,-5],values:{pick:10,filler:90,bw:100}}]}}).eligible);
