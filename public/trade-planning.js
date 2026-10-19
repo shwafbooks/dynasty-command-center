@@ -1,7 +1,8 @@
+import {positionDemand} from './trade-relevance.js';
 import {pid,roster} from './trade-engine.js';
 const price=(p,s)=>p.position==='PICK'?s.pickValues?.[`${p.season}:${p.round}:${p.scenario||'generic'}`]:s.values?.[pid(p)];
-export function rosterNeeds(team,teams,markets){
- const rows=['QB','RB','WR','TE'].map(position=>{const ranks=[];for(const s of markets.sources||[]){const score=t=>roster(t).filter(p=>p.position===position&&Number.isFinite(price(p,s))).sort((a,b)=>price(b,s)-price(a,s)).slice(0,position==='TE'?1:2).reduce((n,p)=>n+price(p,s),0),ordered=teams.map(t=>({id:t.rosterId,score:score(t)})).sort((a,b)=>b.score-a.score);const own=ordered.find(t=>t.id===team.rosterId);if(own?.score>0)ranks.push(1+ordered.filter(t=>t.score>own.score).length);}return {position,rank:ranks.length?Math.round(ranks.reduce((n,r)=>n+r,0)/ranks.length):null};});return rows.filter(r=>r.rank!=null).sort((a,b)=>b.rank-a.rank).slice(0,2);
+export function rosterNeeds(team,teams,markets,slots=null){
+ const rows=['QB','RB','WR','TE'].map(position=>{const ranks=[];for(const s of markets.sources||[]){const score=t=>roster(t).filter(p=>p.position===position&&Number.isFinite(price(p,s))).sort((a,b)=>price(b,s)-price(a,s)).slice(0,slots?positionDemand(position,slots):(position==='TE'?1:2)).reduce((n,p)=>n+price(p,s),0),ordered=teams.map(t=>({id:t.rosterId,score:score(t)})).sort((a,b)=>b.score-a.score);const own=ordered.find(t=>t.id===team.rosterId);if(own?.score>0)ranks.push(1+ordered.filter(t=>t.score>own.score).length);}return {position,of:teams.length,rank:ranks.length?Math.round(ranks.reduce((n,r)=>n+r,0)/ranks.length):null};});return rows.filter(r=>r.rank!=null).sort((a,b)=>b.rank-a.rank).slice(0,2);
 }
 export function counterAdjustments({a,b,assetsA,assetsB,markets,protectedIds=new Set()}){
  const sources=(markets.sources||[]).filter(s=>[...assetsA,...assetsB].every(p=>Number.isFinite(price(p,s))));if(!sources.length)return [];
