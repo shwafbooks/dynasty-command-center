@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {buildVerifiedSeasonScoring} from '../lib/season-scoring.js';
+import {buildLeagueTeamIntelligence} from '../lib/team-intelligence.js';
+// Two QBs (including the SF starter), one RB in FLEX; traded QB changes teams in week 2.
+const matches={1:[{roster_id:1,starters:['q1','q2','r1'],points:45},{roster_id:2,starters:['q3'],points:30}],2:[{roster_id:1,starters:['q1','r1'],points:24},{roster_id:2,starters:['q2','q3'],points:45}],3:[{roster_id:1,starters:['q1'],points:999},{roster_id:2,starters:['q3'],points:30}]};
+const stats={1:{q1:{pass_yd:20},q2:{pass_yd:15},r1:{pass_yd:10},q3:{pass_yd:30},bench:{pass_yd:100}},2:{q1:{pass_yd:25},q2:{pass_yd:10},r1:{pass_yd:-1},q3:{pass_yd:35},bench:{pass_yd:100}},3:{q1:{pass_yd:20},q3:{pass_yd:30}}};
+const fetchImpl=async url=>({ok:true,json:async()=>url.includes('/matchups/')?matches[Number(url.split('/').at(-1))]:url.includes('/stats/')?stats[Number(url.split('/').at(-1))]:{season:2026,scoring_settings:{pass_yd:1}}});
+const seasonScoring=await buildVerifiedSeasonScoring({leagueId:'test',throughWeek:3,fetchImpl});
+assert.deepEqual(seasonScoring.verifiedWeeks,[1,2]);assert.deepEqual(seasonScoring.excludedWeeks,[3]);
+const playerMap=Object.fromEntries(['q1','q2','q3','r1','bench','rookie'].map(id=>[id,{full_name:id,position:id==='r1'?'RB':'QB'}]));
+const teams=[{rosterId:1,bench:[{id:'rookie',position:'QB'},{id:'bench',position:'QB'}]},{rosterId:2,starters:[{id:'q2',position:'QB'}]}];
+const report=buildLeagueTeamIntelligence({teams,seasonScoring,playerMap});
+assert.equal(report.status,'verified-production');const [a,b]=report.teams;
+assert.equal(a.positions.QB.seasonPoints,60);assert.equal(a.positions.QB.starts,3);assert.equal(b.positions.QB.seasonPoints,75);
+assert.equal(a.positions.QB.comparison.rank,2);assert.equal(b.positions.QB.comparison.rank,1);
+assert.equal(a.positions.RB.seasonPoints,9);assert.equal(a.totalStarterPoints,69);assert.equal(b.totalStarterPoints,75);
+assert.equal(a.positions.QB.players.some(p=>p.playerId==='bench'||p.playerId==='rookie'),false);
+assert.equal(a.positions.QB.players.find(p=>p.playerId==='q2').seasonPoints,15);assert.equal(b.positions.QB.players.find(p=>p.playerId==='q2').seasonPoints,10);
+assert.equal(buildLeagueTeamIntelligence({teams,seasonScoring:{...seasonScoring,starterWeeks:[]},playerMap}).status,'insufficient-data');
+assert.equal(buildLeagueTeamIntelligence({teams,seasonScoring,playerMap:{...playerMap,q1:{}}}).status,'insufficient-data');
+console.log('Starter production verified: weekly ownership, SF/FLEX, bench/rookie exclusion, negative points, reconciliation gate, missing data.');

@@ -50,12 +50,12 @@ assert.equal(axes.teams[0].dynastyAssetEvidence.lineupMarketCore,.2);
 assert.equal(axes.teams[0].dynastyAssetEvidence.replacementContext,.4);
 assert.equal(axes.interpretation.dynastyAssetStrength.includes('not independently added'),true);
 
-const scoring={verifiedWeeks:[1],players:{p1:{points:10,verifiedWeekCount:1},p2:{points:10,verifiedWeekCount:1}}};
+const scoring={verifiedWeeks:[1],starterWeeks:[{week:1,rosters:[{rosterId:1,starters:[{playerId:'p1',points:10}]},{rosterId:2,starters:[{playerId:'p2',points:10}]}]}],players:{p1:{points:10,verifiedWeekCount:1},p2:{points:10,verifiedWeekCount:1}}};
 const tieReport=buildLeagueTeamIntelligence({teams:[
  {rosterId:1,team:'A',manager:'a',starters:[{id:'p1',name:'P1',position:'QB'}],bench:[]},
  {rosterId:2,team:'B',manager:'b',starters:[{id:'p2',name:'P2',position:'QB'}],bench:[]}
 ],seasonScoring:scoring});
-assert.equal(tieReport.formulaVersion,'team-intelligence-production-v1.2');
+assert.equal(tieReport.formulaVersion,'team-intelligence-starter-production-v2');
 assert.equal(tieReport.teams[0].positions.QB.comparison.rank,1);
 assert.equal(tieReport.teams[1].positions.QB.comparison.rank,1);
 
