@@ -1,0 +1,15 @@
+export const SHARE_LEAGUE='1389344338340761600';
+const id=v=>typeof v==='string'&&/^[a-zA-Z0-9:_-]{1,100}$/.test(v);
+export function cleanDeal(input){
+ if(!input||typeof input!=='object'||typeof input.a!=='string'||typeof input.b!=='string'||!/^\d{1,5}$/.test(input.a)||!/^\d{1,5}$/.test(input.b)||input.a===input.b)throw Error('Invalid teams in shared deal.');
+ const out={v:1,league:SHARE_LEAGUE,a:input.a,b:input.b};
+ for(const field of ['sendA','sendB','pickA','pickB']){const values=input[field];if(!Array.isArray(values)||values.length>30||values.some(x=>!id(x))||new Set(values).size!==values.length)throw Error('Invalid assets in shared deal.');if(values.some(x=>field.startsWith('pick')?!/^pick:\d{4}:\d{1,2}:\d{1,5}$/.test(x):x.startsWith('pick:')))throw Error('Invalid asset type.');out[field]=[...values].sort();}
+ const all=[...out.sendA,...out.sendB,...out.pickA,...out.pickB];if(!all.length||new Set(all).size!==all.length)throw Error('Shared deal has empty or duplicate assets.');
+ out.scenarios={};for(const p of [...out.pickA,...out.pickB]){const scenario=input.scenarios?.[p]||'generic';if(!['generic','early','mid','late'].includes(scenario))throw Error('Invalid pick scenario.');out.scenarios[p]=scenario;}return out;
+}
+export const dealKey=input=>JSON.stringify(cleanDeal(input));
+export function encodeDeal(input){const bytes=new TextEncoder().encode(JSON.stringify(cleanDeal(input)));return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+export function decodeDeal(token){if(typeof token!=='string'||token.length>12000||!/^[A-Za-z0-9_-]+$/.test(token))throw Error('This trade link is invalid.');try{const raw=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(atob(token.replace(/-/g,'+').replace(/_/g,'/')),x=>x.charCodeAt(0))));if(raw.v!==1||raw.league!==SHARE_LEAGUE)throw Error();return cleanDeal(raw);}catch{throw Error('This trade link is invalid or for a different league.');}}
+export function shareUrl(input,base){const url=new URL('/',base);url.searchParams.set('deal',encodeDeal(input));url.hash='trade-center';return url.href;}
+export function shortlistDeal(rows,input){const deal=cleanDeal(input);if(rows.some(r=>dealKey(r)===dealKey(deal)))return {rows,status:'already-added'};if(rows.length>=3)return {rows,status:'full'};return {rows:[...rows,deal],status:'added'};}
+export function offerMessage({a,b,assetsA,assetsB,dynasty,weekly,link}){const assets=list=>list.map(p=>p.position==='PICK'?`${p.name} (${p.scenario||'general'} scenario)`:p.name).join(', ')||'No assets';const signed=n=>(n>0?'+':'')+n.toFixed(1);return [`Trade idea for ${a.manager} and ${b.manager}:`,`${a.manager} sends: ${assets(assetsA)}.`,`${b.manager} sends: ${assets(assetsB)}.`,`${a.manager}: ${dynasty.sides[0].core.toLowerCase()}. ${b.manager}: ${dynasty.sides[1].core.toLowerCase()}.`,weekly.every(s=>s.delta!=null)?`This week’s projected lineup changes: ${a.manager} ${signed(weekly[0].delta)}; ${b.manager} ${signed(weekly[1].delta)} points.`:'Weekly lineup impact has incomplete projections.',`Take a look and adjust it here: ${link}`].join('\n');}
