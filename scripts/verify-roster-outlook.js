@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {buildRosterOutlook} from '../lib/roster-outlook.js';
+const capacity={guaranteed:{QB:1,RB:0,WR:0,TE:0},slots:{SUPERFLEX:1,FLEX:0}};
+const p=(id,value,position='QB')=>({playerId:id,name:id,position,consensusPercentile:value});
+const teams=[{rosterId:1,players:[p('allen',1),p('maye',.9),p('beck',.1)]},{rosterId:2,players:[p('b1',.8),p('b2',.7),p('depth',.3)]},{rosterId:3,players:[p('c1',1),p('c2',.9),p('unknown',null)]}];
+const build=teams=>buildRosterOutlook({marketProfile:{status:'ready',publicationEligible:true,teams},lineupCapacity:capacity});
+const result=build(teams),[a,b,c]=result.teams;
+assert.equal(a.starting.rank,1);assert.equal(c.starting.rank,1);assert.equal(b.starting.rank,3);assert.equal(a.starting.players.length,2);assert.equal(a.positions[0].value,1.9);assert.equal(a.bench.rank,2);assert.equal(c.bench.value,null);assert.equal(c.bench.rank,null);assert.equal(c.coverage.matched,2);
+const added=build([{...teams[0],players:[...teams[0].players,p('rookie',0)]},teams[1]]).teams[0];assert.equal(added.starting.value,a.starting.value);assert.equal(added.bench.value,a.bench.value);assert.equal(added.positions[0].value,a.positions[0].value);
+const incomplete=build([{rosterId:4,players:[p('only',.5),p('missing',null)]}]).teams[0];assert.equal(incomplete.starting.rank,null);assert.equal(incomplete.positions[0].rank,null);
+assert.equal(buildRosterOutlook({marketProfile:{status:'withheld'}}).status,'unavailable');
+assert.equal(JSON.stringify(result).includes('NaN'),false);
+console.log('Roster Outlook: legal SF core, independent bench value, missing coverage, tie ranks, rookie neutrality passed.');
