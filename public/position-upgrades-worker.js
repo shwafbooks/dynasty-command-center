@@ -1,0 +1,2 @@
+import {positionUpgradeOffers,rankUpgrades} from './position-upgrades.js';
+self.onmessage=event=>{const args=event.data,others=args.teams.filter(t=>String(t.rosterId)!==String(args.own.rosterId)),rows=[];try{for(let i=0;i<others.length;i++){rows.push(...positionUpgradeOffers({...args,other:others[i],protectedIds:new Set(args.protectedIds)}));self.postMessage({type:'progress',done:i+1,total:others.length});}self.postMessage({type:'complete',offers:rankUpgrades(rows)});}catch{self.postMessage({type:'error'});}};
