@@ -3,12 +3,12 @@ import {pid,roster,evaluateTrade} from './trade-engine.js';
 import {dynastyTrade} from './dynasty-trade.js';
 const pickValue=(p,s)=>s.pickValues?.[`${p.season}:${p.round}:${p.scenario||'generic'}`];
 const value=(p,s)=>p.position==='PICK'?pickValue(p,s):s.values?.[pid(p)];
-export function buildOffers({a,b,targets,markets,slots,context,protectedIds=new Set(),goalA='Balanced',goalB='Balanced',needs=[]}){
+export function buildOffers({a,b,targets,markets,slots,context,protectedIds=new Set(),goalA='Balanced',goalB='Balanced',needs=[],candidateFilter=()=>true}){
  if(targets.some(p=>protectedIds.has(pid(p))))return {status:'protected-target',offers:[]};
  if(!targets.length)return {status:'no-target',offers:[]};
  const sources=(markets.sources||[]).filter(s=>targets.every(p=>Number.isFinite(value(p,s))));if(!sources.length)return {status:'missing-market',offers:[]};
  const priced=sources.map(s=>({s,total:targets.reduce((n,p)=>n+value(p,s),0)})).filter(s=>s.total>0);if(!priced.length)return {status:'missing-market',offers:[]};
- const pool=[...roster(a),...(markets.picks||[]).filter(p=>String(p.ownerRosterId)===String(a.rosterId)).map(p=>({...p,scenario:'generic'}))].filter(p=>!protectedIds.has(pid(p))).filter(p=>priced.some(({s,total})=>Number.isFinite(value(p,s))&&value(p,s)>=total*.1&&value(p,s)<=total*1.35));
+ const pool=[...roster(a),...(markets.picks||[]).filter(p=>String(p.ownerRosterId)===String(a.rosterId)).map(p=>({...p,scenario:'generic'}))].filter(p=>!protectedIds.has(pid(p))&&candidateFilter(p)).filter(p=>priced.some(({s,total})=>Number.isFinite(value(p,s))&&value(p,s)>=total*.1&&value(p,s)<=total*1.35));
  const rough=[];const assess=assets=>{const evidence=priced.filter(({s})=>assets.every(p=>Number.isFinite(value(p,s)))).map(({s,total})=>({source:s.source,ratio:assets.reduce((n,p)=>n+value(p,s),0)/total,largest:Math.max(...assets.map(p=>value(p,s)))/total}));if(evidence.length<([...targets,...assets].some(p=>p.position==='PICK')?1:2)||evidence.some(e=>Math.abs(1-e.ratio)/((1+e.ratio)/2)>.1+1e-9)||!evidence.some(e=>e.largest>=.35))return;const gap=evidence.reduce((n,e)=>n+Math.abs(1-e.ratio),0)/evidence.length;rough.push({assets,evidence,gap,score:gap+assets.length*.012});};
  for(let i=0;i<pool.length;i++){assess([pool[i]]);for(let j=i+1;j<pool.length;j++){assess([pool[i],pool[j]]);for(let k=j+1;k<pool.length;k++)assess([pool[i],pool[j],pool[k]]);}}
  rough.sort((x,y)=>x.score-y.score||x.assets.map(pid).join().localeCompare(y.assets.map(pid).join()));
