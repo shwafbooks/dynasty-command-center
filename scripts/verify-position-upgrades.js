@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {positionUpgradeOffers,upgradeTargets,rankUpgrades} from '../public/position-upgrades.js';
 const p=(id,position='TE')=>({id,name:id,position,nflTeam:'NE'}),own={rosterId:1,manager:'A',starters:[p('old')],bench:[p('bench')]},other={rosterId:2,manager:'B',starters:[p('target')],bench:[p('lesser')]};
 const markets={status:'ready',sources:[{source:'x',values:{old:50,bench:10,target:100,lesser:20},pickValues:{'2027:1:generic':100}}],picks:[{id:'pick:2027:1:1',position:'PICK',name:'2027 first',season:2027,round:1,ownerRosterId:1}]};
-const args={own,other,position:'TE',markets,slots:['TE'],context:{projections:{old:10,target:12,bench:2,lesser:3},games:{}}};
+const args={own,other,position:'TE',plans:{'2':'Rebuild'},markets,slots:['TE'],context:{projections:{old:10,target:12,bench:2,lesser:3},games:{}}};
 assert.deepEqual(upgradeTargets(args).map(x=>x.id),['target']);
 const offers=positionUpgradeOffers(args);assert(offers.length>0);assert(offers.every(o=>o.target.position==='TE'&&o.dynasty.sources.every(s=>s.core[0]>0)));assert(offers.some(o=>o.send[0].position==='PICK'));
 assert.equal(positionUpgradeOffers({...args,protectedIds:new Set(['pick:2027:1:1'])}).length,0);
