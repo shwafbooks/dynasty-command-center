@@ -1,3 +1,4 @@
+import {rankShopOffers} from '../public/trade-shop.js';
 import assert from 'node:assert/strict';
 import {describeOfferFit,describeRosterFit,compareRosterOffers} from '../public/trade-relevance.js';
 import {dynastyTrade} from '../public/dynasty-trade.js';
@@ -16,3 +17,7 @@ const fake=(priority,mutual)=>({quality:{tier:'negotiation',score:1},rosterFit:{
 assert.equal(describeRosterFit({incoming:[b.starters[0]],outgoing:[],side:0,dynasty:{sources:[]},weekly:[]}).kind,'unknown');
 for(const side of te.sides)assert(!side.text.includes('undefined'));
 console.log('All-position fit: TE needs, RB replacement, WR FLEX role, depth, draft capital, symmetric ranking and missing data passed.');
+
+const cases=[...Array.from({length:5},(_,i)=>['need','Strengthens TE',100-i]),...Array.from({length:2},()=>['replacement','RB replacement',30]),...Array.from({length:2},()=>['starter','Starter option',20]),...Array.from({length:2},()=>['capital','Draft capital',10])].map(([kind,label,score],i)=>({other:{rosterId:i+1},send:[{id:'sold'}],receive:[{id:'return'+i}],score,quality:{tier:'negotiation'},rosterFit:{sides:[{priority:1},{kind,label,priority:kind==='need'?4:2}]}}));
+const diverse=rankShopOffers(cases);assert.equal(diverse.length,8);assert.equal(diverse.filter(o=>o.rosterFit.sides[1].kind==='need').length,2);assert.equal(new Set(diverse.map(o=>o.rosterFit.sides[1].kind)).size,4);
+console.log('Balanced search diversity: useful paths precede repeated same-position packages without an empty-result hard cap.');

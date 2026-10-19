@@ -12,9 +12,11 @@ export function shopTeam({own,other,teams,targets,markets,slots,context,protecte
 }
 export function rankShopOffers(rows){
  const compare=(a,b)=>Number(b.quality?.tier==='strong-fit')-Number(a.quality?.tier==='strong-fit')||(b.rosterFit?.sides[1]?.priority||0)-(a.rosterFit?.sides[1]?.priority||0)||(b.rosterFit?.sides[0]?.priority||0)-(a.rosterFit?.sides[0]?.priority||0)||b.score-a.score;
- const sorted=[...rows].sort(compare),out=[],used=new Set(),counts=new Map();
- const add=o=>{if(!o||out.length>=8)return;const key=o.other.rosterId+':'+o.send.map(pid).sort().join(',')+':'+o.receive.map(pid).sort().join(',');if(used.has(key)||(counts.get(o.other.rosterId)||0)>=2)return;used.add(key);counts.set(o.other.rosterId,(counts.get(o.other.rosterId)||0)+1);out.push(o);};
+ const sorted=[...rows].sort(compare),out=[],used=new Set(),counts=new Map(),buckets=new Map(),bucket=o=>{const fit=o.rosterFit?.sides[1];return fit?fit.kind+':'+fit.label:o.label;};
+ const add=o=>{if(!o||out.length>=8)return;const key=o.other.rosterId+':'+o.send.map(pid).sort().join(',')+':'+o.receive.map(pid).sort().join(',');if(used.has(key)||(counts.get(o.other.rosterId)||0)>=2)return;used.add(key);counts.set(o.other.rosterId,(counts.get(o.other.rosterId)||0)+1);out.push(o);buckets.set(bucket(o),(buckets.get(bucket(o))||0)+1);};
  for(const o of sorted.filter(o=>o.quality?.tier==='strong-fit').slice(0,3))add(o);
  for(const kind of ['need','replacement','upgrade','capital','weekly','starter'])add(sorted.find(o=>o.rosterFit?.sides[1]?.kind===kind));
+ for(const o of sorted)if((buckets.get(bucket(o))||0)<2)add(o);
+ // Prefer different useful paths; relax the diversity cap rather than hiding all alternatives.
  for(const o of sorted)add(o);return out.sort(compare);
 }
