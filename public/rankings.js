@@ -51,6 +51,6 @@ function render(focusId){
  root.querySelectorAll('[data-ranking-roster]').forEach(b=>b.addEventListener('click',()=>window.DCCOpenRoster?.(b.dataset.rankingRoster)));
  root.querySelectorAll('.rank-row').forEach(row=>row.addEventListener('toggle',()=>{if(row.open)root.querySelectorAll('.rank-row[open]').forEach(other=>{if(other!==row)other.open=false;});}));root.querySelectorAll('img').forEach(img=>img.addEventListener('error',()=>img.remove(),{once:true}));if(focusId)root.querySelector('#'+focusId)?.focus({preventScroll:true});
 }
-window.DCCRankings={load(data){snapshot=data;power=buildPowerRankings({teams:data.teams,starterWeeks:data.scoring?.starterWeeks,verifiedWeeks:data.scoring?.verifiedWeeks,throughWeek:data.throughWeek});render();}};
+window.DCCRankings={load(data){snapshot=data;power=buildPowerRankings({teams:data.teams,starterWeeks:data.scoring?.starterWeeks,verifiedWeeks:data.scoring?.verifiedWeeks,throughWeek:data.throughWeek});window.DCCPowerData=power;render();dispatchEvent(new Event('dcc:rankings'));}};
 
 if(window.DCCRankingsData)window.DCCRankings.load(window.DCCRankingsData);

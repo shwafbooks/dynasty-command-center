@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {buildHomeDashboard} from '../public/home-model.js';
+const teams=[{rosterId:1,team:'A',starters:[{id:'q1',name:'A QB',position:'QB',nflTeam:'BUF'}]},{rosterId:2,team:'B',starters:[{id:'q2',name:'B QB',position:'QB',nflTeam:'NE'}]}];
+const rows=[{roster_id:1,matchup_id:1,points:0,starters:['q1'],starters_points:[0]},{roster_id:2,matchup_id:1,points:0,starters:['q2'],starters_points:[0]}];
+const match={currentWeek:7,week:7,currentSeason:'2026',season:'2026',rows,context:{games:{BUF:{state:'upcoming'},NE:{state:'upcoming'}},projections:{q1:25,q2:15}}};
+const evidence={rosterOutlook:{status:'ready',teams:[{rosterId:1,needs:[{position:'TE',rank:9,of:10}]}]}};
+let model=buildHomeDashboard({teams,rosterId:1,matchup:match,evidence});
+assert.equal(model.game.opponent.rosterId,2);assert.equal(model.game.featuredMode,'projected');assert.equal(model.game.featured[0].value,25);assert(model.game.odds.left>50);assert.equal(model.need.position,'TE');
+assert.equal(buildHomeDashboard({teams,rosterId:2,matchup:match}).game.opponent.rosterId,1);
+assert.equal(buildHomeDashboard({teams,rosterId:1,matchup:{...match,week:6}}).game,null);
+assert.equal(buildHomeDashboard({teams,rosterId:1,matchup:{...match,season:'2025'}}).game,null);
+assert.equal(buildHomeDashboard({teams,rosterId:99}),null);
+const final=structuredClone(match);final.rows[0].points=10;final.rows[0].starters_points=[10];final.rows[1].points=9;final.context.games.BUF.state='final';final.context.games.NE.state='final';model=buildHomeDashboard({teams,rosterId:1,matchup:final});assert.equal(model.game.odds.left,100);assert.equal(model.game.phase,'final');assert.equal(model.game.featuredMode,'points');
+const noProjection=structuredClone(match);delete noProjection.context.projections.q1;assert.equal(buildHomeDashboard({teams,rosterId:1,matchup:noProjection}).game.odds,null);
+const strong={rosterOutlook:{status:'ready',teams:[{rosterId:1,needs:[{position:'QB',rank:1,of:10}]}]}};assert.equal(buildHomeDashboard({teams,rosterId:1,evidence:strong}).need,null);
+const ambiguous=structuredClone(match);ambiguous.rows.push(ambiguous.rows[1]);assert.equal(buildHomeDashboard({teams,rosterId:1,matchup:ambiguous}).game,null);
+const before=JSON.stringify(match);buildHomeDashboard({teams,rosterId:1,matchup:match});assert.equal(JSON.stringify(match),before);
+console.log('Home dashboard: selected franchise, current-week isolation, projected vs actual points, final odds, missing data, relevant needs and duplicate matchups passed.');

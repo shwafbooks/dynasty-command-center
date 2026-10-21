@@ -1,7 +1,7 @@
 (()=>{
 const root=document.querySelector('#transaction-feed');if(!root)return;
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-let events=[],active='all',visible=12;
+let events=[],active='all',visible=12,fetching=false;
 const typeLabel={trade:'TRADE',waiver:'WAIVER',free_agent:'FREE AGENT',commissioner:'COMMISSIONER'};
 const stamp=value=>value?new Date(value).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Time unavailable';
 const portrait=player=>`https://sleepercdn.com/content/nfl/players/thumb/${encodeURIComponent(player.id)}.jpg`;
@@ -23,11 +23,12 @@ function render(){
   root.querySelectorAll('[data-wire-filter]').forEach(button=>{const selected=button.dataset.wireFilter===active;button.classList.toggle('is-active',selected);button.setAttribute('aria-pressed',String(selected));});
 }
 async function load(){
+  if(fetching)return;fetching=true;
   root.innerHTML='<p class="wire-empty">Syncing completed Sleeper transactions…</p>';
   try{
     const response=await fetch(`/api/league/${window.DCC_LEAGUE_ID||'1389344338340761600'}/roster-center?view=transactions`,{cache:'no-store'}),data=await response.json();
     if(!response.ok||!['ready','partial'].includes(data.status))throw Error(data.message||'Transaction feed unavailable');
-    window.DCCTransactionData=data;dispatchEvent(new Event('dcc:news'));
+    window.DCCTransactionData=data;window.DCCTransactionStale=false;dispatchEvent(new Event('dcc:news'));
     events=data.transactions||[];active='all';visible=12;
     const feature=data.latestTrade?`<div class="wire-feature-label">LATEST TRADE · VERIFIED MOVEMENT</div>${card(data.latestTrade,true)}`:'';
     const coverage=data.status==='partial'?'<p class="wire-warning">Some Sleeper weeks could not be loaded. This feed may be incomplete.</p>':'';
@@ -37,7 +38,7 @@ async function load(){
     root.querySelector('#wire-more').addEventListener('click',()=>{visible+=12;render();});
     root.querySelectorAll('[data-wire-filter]').forEach(button=>button.addEventListener('click',()=>{active=button.dataset.wireFilter;visible=12;render();}));
     render();
-  }catch{root.innerHTML='<p class="wire-empty">Sleeper activity is temporarily unavailable. <button class="wire-refresh" type="button">Try again</button></p>';root.querySelector('button').addEventListener('click',load);}
+  }catch{window.DCCTransactionStale=true;dispatchEvent(new Event('dcc:news'));root.innerHTML='<p class="wire-empty">Sleeper activity is temporarily unavailable. <button class="wire-refresh" type="button">Try again</button></p>';root.querySelector('button').addEventListener('click',load);}finally{fetching=false;}
 }
-load();
+window.DCCTransactionFeed={refresh:load};load();
 })();

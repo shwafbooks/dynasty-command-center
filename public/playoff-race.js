@@ -5,7 +5,7 @@
  const avatar=t=>`<span class="race-avatar">${t.avatar?`<img src="${esc(t.avatar)}" alt="" loading="lazy">`:'DC'}</span>`;
  const percent=n=>n==null?'—':n<.01?'<1%':n>.99?'>99%':`${Math.max(1,Math.min(99,Math.round(n*100)))}%`;
  const status=t=>t.outlook?.status==='clinched'?'Clinched':t.outlook?.status==='eliminated'?'Eliminated':t.bye?'Bye position':t.inField?'In the field':t.gamesBack===0?'Tied at cutoff':`${t.gamesBack} back`;
- let data,selected;
+ let data,selected,fetching=false;
  function path(t){
   if(data.regularSeasonOver)return 'Regular season complete';
   if(t.outlook?.divisionClinched)return 'Division secured';
@@ -40,5 +40,5 @@
   const select=root.querySelector('#race-team-select');select.addEventListener('change',e=>{selected=e.target.value;schedule();});
   root.querySelectorAll('[data-race-team]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.raceTeam;select.value=selected;schedule();root.querySelector('#race-schedule').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'nearest'});}));schedule();
  }
- async function load(){refresh.disabled=true;root.setAttribute('aria-busy','true');try{const r=await fetch('/api/league/1389344338340761600/roster-center?view=playoff-race');if(!r.ok)throw Error();const next=await r.json();if(!next.teams?.length)throw Error();data=next;render();}catch{if(!data)root.innerHTML='<p class="notice">The playoff race is temporarily unavailable. Try refreshing.</p>';else{let notice=root.querySelector('.race-refresh-error');if(!notice){notice=document.createElement('p');notice.className='notice race-refresh-error';root.prepend(notice);}notice.textContent='Refresh unavailable. Showing the last loaded race.';}}finally{refresh.disabled=false;root.removeAttribute('aria-busy');}}refresh.addEventListener('click',load);load();
+ async function load(){if(fetching)return;fetching=true;refresh.disabled=true;root.setAttribute('aria-busy','true');try{const r=await fetch('/api/league/1389344338340761600/roster-center?view=playoff-race');if(!r.ok)throw Error();const next=await r.json();if(!next.teams?.length)throw Error();data=next;window.DCCPlayoffRaceData={...data,updatedAt:new Date().toISOString()};window.DCCPlayoffRaceStale=false;dispatchEvent(new Event('dcc:race'));render();}catch{window.DCCPlayoffRaceStale=true;dispatchEvent(new Event('dcc:race'));if(!data)root.innerHTML='<p class="notice">The playoff race is temporarily unavailable. Try refreshing.</p>';else{let notice=root.querySelector('.race-refresh-error');if(!notice){notice=document.createElement('p');notice.className='notice race-refresh-error';root.prepend(notice);}notice.textContent='Refresh unavailable. Showing the last loaded race.';}}finally{fetching=false;refresh.disabled=false;root.removeAttribute('aria-busy');}}window.DCCPlayoffRace={refresh:load};refresh.addEventListener('click',load);load();
 })();
