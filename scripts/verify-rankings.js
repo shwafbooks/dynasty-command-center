@@ -17,3 +17,7 @@ const duplicate=fixture([[1,2,3,4]]);duplicate[0].rosters[1].rosterId=1;
 assert.equal(buildPowerRankings({teams,starterWeeks:duplicate,verifiedWeeks:[1],throughWeek:1}).status,'unavailable');
 assert.deepEqual(JSON.parse(JSON.stringify(run([[0,0,0,0]]))).teams.map(t=>t.rank),[1,1,1,1]);
 console.log('Rankings: all-play math, ties, recent weighting, movement, negative scores and incomplete-data gates passed.');
+const immutable=fixture([[5,4,3,2],[4,5,3,2]]),before=JSON.stringify(immutable);
+buildPowerRankings({teams,starterWeeks:immutable,verifiedWeeks:[1,2],throughWeek:2});assert.equal(JSON.stringify(immutable),before);
+const withBench=teams.map(t=>({...t,bench:[{name:'Bench rookie',seasonPoints:0}]}));assert.deepEqual(buildPowerRankings({teams:withBench,starterWeeks:immutable,verifiedWeeks:[1,2],throughWeek:2}).teams,buildPowerRankings({teams,starterWeeks:immutable,verifiedWeeks:[1,2],throughWeek:2}).teams);
+const duplicateWeek=fixture([[1,2,3,4]]);duplicateWeek.push(duplicateWeek[0]);assert.equal(buildPowerRankings({teams,starterWeeks:duplicateWeek,verifiedWeeks:[1],throughWeek:1}).status,'unavailable');
