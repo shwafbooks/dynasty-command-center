@@ -6,6 +6,6 @@ const users=rosters.map(r=>({user_id:r.owner_id,display_name:'Manager '+r.roster
 const schedules={5:rosters.map((r,i)=>({roster_id:r.roster_id,matchup_id:Math.floor(i/2)+1}))};
 const d=buildPlayoffRace(league,rosters,users,{season:'2026',week:5},schedules);
 assert.equal(d.teams.length,10);assert.equal(d.teams.filter(t=>t.inField).length,6);assert.deepEqual(d.teams.slice(0,2).map(t=>t.rosterId),[1,10]);assert(d.teams.slice(0,2).every(t=>t.bye));assert.equal(d.teams[0].pointsFor,100.25);assert.equal(d.teams[0].remaining.length,10);assert.equal(d.teams[0].remaining[0].opponent.rosterId,2);assert.equal(d.teams[0].remaining[1].opponent,null);assert.doesNotThrow(()=>JSON.stringify(d));
-const plain=buildPlayoffRace({...league,settings:{...league.settings,divisions:0}},rosters,users,{season:'2026',week:15},{});assert.equal(plain.teams[0].remaining.length,0);assert(!plain.teams.some(t=>t.bye));
+const plain=buildPlayoffRace({...league,settings:{...league.settings,divisions:0}},rosters,users,{season:'2026',week:15},{});assert.equal(plain.teams[0].remaining.length,0);assert.equal(plain.teams.filter(t=>t.bye).length,2);
 const tied=structuredClone(rosters);tied.slice(2,5).forEach(r=>r.settings.wins=0);tied[0].settings.wins=2;tied[0].settings.fpts=100;tied[1].settings.wins=2;tied[1].settings.fpts=100;tied[1].settings.fpts_against=101;const t=buildPlayoffRace(league,tied,users,{season:'2026',week:5},{});assert(t.divisionLeaders.includes(2));
 console.log('Playoff race: division leaders, six spots, byes, decimal points, schedule gaps, ties and serialization passed.');
