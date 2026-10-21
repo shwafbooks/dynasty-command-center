@@ -16,3 +16,5 @@ const strong={rosterOutlook:{status:'ready',teams:[{rosterId:1,needs:[{position:
 const ambiguous=structuredClone(match);ambiguous.rows.push(ambiguous.rows[1]);assert.equal(buildHomeDashboard({teams,rosterId:1,matchup:ambiguous}).game,null);
 const before=JSON.stringify(match);buildHomeDashboard({teams,rosterId:1,matchup:match});assert.equal(JSON.stringify(match),before);
 console.log('Home dashboard: selected franchise, current-week isolation, projected vs actual points, final odds, missing data, relevant needs and duplicate matchups passed.');
+const race={week:7,teams:[{rosterId:1,division:1,remaining:[{week:7,opponent:{rosterId:2,seed:2}},{week:12,opponent:{rosterId:3,seed:1}}]},{rosterId:3,division:1,divisionLeader:true}]};
+model=buildHomeDashboard({teams,rosterId:1,race});assert.equal(model.raceGame.week,12);assert.equal(model.raceGame.label,'DIVISION RIVAL');
