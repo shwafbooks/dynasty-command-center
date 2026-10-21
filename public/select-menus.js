@@ -29,7 +29,7 @@
  function keydown(e,b){
   if(e.isComposing)return;
   if(e.key==='Escape'){if(opened){e.preventDefault();e.stopPropagation();close(true);}return;}
-  if(e.key==='Tab'){close();return;}
+  if(e.key==='Tab'){close(true);return;}
   if(!opened){if(['ArrowDown','ArrowUp','Enter',' '].includes(e.key)){e.preventDefault();open(b,e.key==='ArrowUp');}else if(e.key.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){open(b);if(b.search){b.search.value=e.key;draw(b,e.key);}}return;}
   if(opened!==b)return;const enabled=b.visible.filter(o=>!o.disabled&&!o.closest('optgroup')?.disabled),index=enabled.indexOf(b.active);
   if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)&&!(b.search&&e.target===b.search&&['Home','End'].includes(e.key))){e.preventDefault();activate(b,e.key==='Home'?0:e.key==='End'?enabled.length-1:index+(e.key==='ArrowDown'?1:-1));}
