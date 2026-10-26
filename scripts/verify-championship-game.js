@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {buildChampionshipGame} from '../lib/championship-game.js';
+const slots=['QB','RB','FLEX','BN','BN'],players={a:{full_name:'Winner QB',position:'QB'},b:{full_name:'Winner RB',position:'RB'},c:{full_name:'Winner Flex',position:'WR'},d:{full_name:'Other QB',position:'QB'},e:{full_name:'Other RB',position:'RB'},f:{full_name:'Other Flex',position:'TE'}};
+const left={starters:['a','b','c'],starters_points:[30,20,10],players:['a','b','c','bench'],players_points:{bench:99},points:60};
+const right={starters:['d','e','f'],starters_points:[20,10,15],points:45};
+let g=buildChampionshipGame(left,right,slots,players);
+assert(g.verified);assert.equal(g.mvps[0].name,'Winner QB');assert.deepEqual(g.championLineup.map(p=>p.slot),['QB','RB','FLEX']);assert.equal(g.championLineup.length,3);assert.equal(g.biggestEdges.length,2);assert.equal(g.biggestEdges[0].difference,10);assert.equal(g.biggestEdges[0].runnerUp.name,'Other QB');
+g=buildChampionshipGame({...left,starters_points:[25,25,10]},right,slots,players);assert.equal(g.mvps.length,2);
+g=buildChampionshipGame({...left,starters_points:[30,30,-2],points:58,custom_points:61},right,slots,players);assert(g.verified);assert.equal(g.championAdjustment,3);assert.equal(g.championLineup[2].points,-2);
+g=buildChampionshipGame({...left,starters_points:[30,null,10]},right,slots,players);assert(!g.verified);assert.equal(g.championLineup[1].points,null);assert.equal(g.mvps.length,0);
+g=buildChampionshipGame({...left,starters:['a','a','c']},right,slots,players);assert(!g.verified);
+g=buildChampionshipGame({...left,points:80},right,slots,players);assert(!g.verified);assert.equal(g.biggestEdges.length,0);
+g=buildChampionshipGame(left,right,[],players);assert(!g.verified);
+g=buildChampionshipGame({...left,starters:['a','b','0'],starters_points:[30,20,0],points:50},right,slots,players);assert(g.verified);assert.equal(g.championLineup[2].name,'Empty slot');assert.equal(g.championLineup[2].id,null);
+g=buildChampionshipGame({...left,starters_points:undefined,players_points:{a:30,b:20,c:10,bench:99}},right,slots,{});assert(g.verified);assert.equal(g.mvps[0].name,'Player #a');assert.equal(g.championLineup.length,3);
+const before=JSON.stringify(left);buildChampionshipGame(left,right,slots,players);assert.equal(JSON.stringify(left),before);
+console.log('Championship breakdown: historical starter isolation, scoring reconciliation, tied MVPs/edges, negatives, empty slots, missing metadata and commissioner adjustments passed.');
