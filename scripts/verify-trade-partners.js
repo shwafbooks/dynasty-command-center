@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';import {partnerOffers,rankPartners} from '../public/trade-partners.js';
+const p=(id,position)=>({id,name:id,position}),a={rosterId:1,starters:[p('aq','QB'),p('ar','RB')],bench:[p('give','QB')]},b={rosterId:2,starters:[p('bq','QB'),p('br','RB')],bench:[p('get','RB')]},teams=[a,b],values={aq:100,ar:10,give:90,bq:10,br:100,get:90},markets={status:'ready',sources:[{source:'one',values},{source:'two',values:Object.fromEntries(Object.entries(values).map(([k,v])=>[k,v*5]))}]},context={slots:['QB','RB'],projections:values,games:{}};
+const args={own:a,other:b,teams,markets,context};let rows=partnerOffers(args);const fit=rows.find(o=>o.give.id==='give'&&o.get.id==='get');assert(fit);assert(fit.quality.eligible);assert(fit.rosterFit.sides.every(s=>s.priority>=2));assert.equal(fit.quality.sourceCount,2);
+assert(partnerOffers({...args,protectedIds:new Set(['give'])}).every(o=>o.give.id!=='give'));assert.equal(partnerOffers({...args,markets:{...markets,sources:markets.sources.slice(0,1)}}).length,0);assert.equal(partnerOffers({...args,markets:{status:'unavailable'}}).length,0);
+const gap=structuredClone(markets);gap.sources.forEach(s=>s.values.get*=2);assert(partnerOffers({...args,markets:gap}).every(o=>!(o.give.id==='give'&&o.get.id==='get')));
+assert.equal(rankPartners([fit,fit]).length,1);assert.equal(rankPartners([]).length,0);
+const before=JSON.stringify(args);partnerOffers(args);assert.equal(JSON.stringify(args),before);
+console.log('Partners: two-sided legal starter improvements, corroborated values, market-gap rejection, protections, missing data and partner diversity passed.');
