@@ -188,3 +188,14 @@
 
 .franchise-selector>span{min-width:0;overflow-wrap:anywhere}
 @media(max-width:600px){.home-status-rail small{font-size:9px}.home-moves .wire-movement>b{font-size:10px}}
+
+/* Partner suggestions: explicit nested groups keep the logo out of the text grid. */
+.tl-partner-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tl-partner{display:flex;flex-direction:column;gap:16px;min-width:0;padding:18px;border-radius:8px;background:linear-gradient(145deg,#182638,#101b2b);transition:background .15s,border-color .15s}
+.tl-partner:hover{border-color:#b59866;background:#1b2b40}.tl-partner:focus-visible{outline:2px solid var(--signal);outline-offset:3px}
+.tl-partner>.tl-partner-identity{display:flex;align-items:center;gap:12px;min-width:0;color:var(--ink);line-height:1.4}
+.tl-partner-identity .tl-logo{width:44px;height:44px;flex:0 0 44px}.tl-partner-identity>span:last-child{min-width:0;flex:1}.tl-partner-identity strong{display:block;font-size:15px;line-height:1.4;overflow-wrap:anywhere}.tl-partner-identity small{display:block;font-size:11px;color:#9aaac0;margin-top:3px;overflow-wrap:anywhere}
+.tl-partner>.tl-partner-exchange,.tl-partner>.tl-partner-impact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;line-height:1.4;min-width:0;width:100%}
+.tl-partner-exchange{padding:14px 0;border-top:1px solid #ffffff12;border-bottom:1px solid #ffffff12}.tl-partner-exchange>span,.tl-partner-impact>span{min-width:0}.tl-partner-exchange small,.tl-partner-impact small{display:block;color:#91a3ba;font-size:10px;margin-bottom:5px}.tl-partner-exchange strong{display:block;color:#e1e8f2;font-size:13px;line-height:1.5;overflow-wrap:anywhere}.tl-partner-impact b{font:600 23px/1.2 var(--font-display);font-variant-numeric:tabular-nums}.tl-partner>.tl-partner-action{display:flex;justify-content:space-between;align-items:center;width:100%;margin:0;margin-top:auto;min-height:32px;font-size:12px}
+@media(max-width:900px){.tl-partner-grid{grid-template-columns:1fr}.tl-partner{gap:13px}.tl-partner-identity strong{font-size:16px}.tl-partner-exchange strong{font-size:14px}.tl-partner-exchange small,.tl-partner-impact small{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.tl-partner{transition:none}}
