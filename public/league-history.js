@@ -11,6 +11,6 @@ root.innerHTML=`${data.warnings.map(w=>`<p class="notice">${esc(w)}</p>`).join('
 root.querySelector('#history-season').addEventListener('change',e=>{selected=e.target.value;renderSeason();});renderSeason();
 window.DCCHistoryData=data;dispatchEvent(new Event('dcc:news'));
 }
-async function load(){try{const response=await fetch('/api/league/1389344338340761600/roster-center?view=history');if(!response.ok)throw new Error();data=await response.json();render();}catch{root.innerHTML='<p class="notice">The league archive is temporarily unavailable.</p><button class="button button--ghost" id="history-retry">Retry archive</button>';root.querySelector('button').addEventListener('click',load);}}
+async function load(){try{data=await window.DCCData.json('/api/league/1389344338340761600/roster-center?view=history',{force:true});render();}catch{root.innerHTML='<p class="notice">The league archive is temporarily unavailable.</p><button class="button button--ghost" id="history-retry">Retry archive</button>';root.querySelector('button').addEventListener('click',load);}}
 load();
 })();

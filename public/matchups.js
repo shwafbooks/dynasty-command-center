@@ -3,7 +3,7 @@ import {estimateWinChance} from './win-chance.js';
 const root=document.querySelector('#matchup-workspace'),button=document.querySelector('#matchup-refresh'),league='1389344338340761600';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let week,season,bundle,loading=false,context={},open=new Set(),currentWeek=null,currentSeason=null,homeLoading=false;
-async function get(url){const r=await fetch(url);if(!r.ok)throw Error();return r.json();}
+const get=(url,force=false)=>window.DCCData.json(url,{force});
 const alias=t=>({WSH:'WAS',JAC:'JAX',LA:'LAR'}[t]||t);
 const team=row=>bundle.teams.find(t=>String(t.rosterId)===String(row.roster_id));
 function lookup(row){const t=team(row);return new Map([...(t?.starters||[]),...(t?.bench||[]),...(t?.ir||[])].map(p=>[String(p.id),p]));}
@@ -18,15 +18,15 @@ function publishHome(rows,ctx=context,forWeek=week){
  if(currentWeek!=null&&forWeek!==currentWeek)return;
  window.DCCMatchupData={season:String(season),week:forWeek,currentWeek,currentSeason,rows:currentWeek==null?[]:rows,context:ctx,updatedAt:new Date().toISOString()};window.DCCMatchupStale=false;dispatchEvent(new Event('dcc:matchup'));
 }
-async function refreshHome(){
+async function refreshHome({force=false}={}){
  if(homeLoading)return;if(!bundle){await load();return;}homeLoading=true;
- try{const state=await get('https://api.sleeper.app/v1/state/nfl');currentSeason=String(state.season);currentWeek=currentSeason===String(season)&&state.season_type==='regular'&&Number(state.week)>=1&&Number(state.week)<=18?Number(state.week):null;
+ try{const state=await get('https://api.sleeper.app/v1/state/nfl',force);currentSeason=String(state.season);currentWeek=currentSeason===String(season)&&state.season_type==='regular'&&Number(state.week)>=1&&Number(state.week)<=18?Number(state.week):null;
  if(currentWeek==null){publishHome([],{},null);return;}
- const [rows,ctx]=await Promise.all([get(`https://api.sleeper.app/v1/league/${league}/matchups/${currentWeek}`),get(`/api/league/${league}/roster-center?view=matchup-context&week=${currentWeek}`).catch(()=>({}))]);publishHome(rows,ctx,currentWeek);
+ const [rows,ctx]=await Promise.all([get(`https://api.sleeper.app/v1/league/${league}/matchups/${currentWeek}`,force),get(`/api/league/${league}/roster-center?view=matchup-context&week=${currentWeek}`,force).catch(()=>({}))]);publishHome(rows,ctx,currentWeek);
  }catch(error){window.DCCMatchupStale=true;dispatchEvent(new Event('dcc:matchup'));throw error;}finally{homeLoading=false;}
 }
-async function load(){if(loading)return;loading=true;button.disabled=true;let requestedWeek;try{if(!bundle){const [state,b]=await Promise.all([get('https://api.sleeper.app/v1/state/nfl'),get(`/api/league/${league}/roster-center`)]);bundle=b;season=b.league.season;currentSeason=String(state.season);currentWeek=currentSeason===String(season)&&state.season_type==='regular'?Number(state.week):null;week=currentWeek??1;week=Math.max(1,Math.min(18,week||1));}
-requestedWeek=week;const [rows,c]=await Promise.all([get(`https://api.sleeper.app/v1/league/${league}/matchups/${requestedWeek}`),get(`/api/league/${league}/roster-center?view=matchup-context&week=${requestedWeek}`).catch(()=>({}))]);if(week!==requestedWeek)return;context=c;publishHome(rows,c,requestedWeek);const pairs=new Map();for(const r of rows){const key=r.matchup_id??`bye-${r.roster_id}`;if(!pairs.has(key))pairs.set(key,[]);pairs.get(key).push(r);}
+async function load(event){const force=event?.type==='click';if(loading)return;loading=true;button.disabled=true;let requestedWeek;try{if(!bundle){const [state,b]=await Promise.all([get('https://api.sleeper.app/v1/state/nfl'),get(`/api/league/${league}/roster-center`)]);bundle=b;season=b.league.season;currentSeason=String(state.season);currentWeek=currentSeason===String(season)&&state.season_type==='regular'?Number(state.week):null;week=currentWeek??1;week=Math.max(1,Math.min(18,week||1));}
+requestedWeek=week;const [rows,c]=await Promise.all([get(`https://api.sleeper.app/v1/league/${league}/matchups/${requestedWeek}`,force),get(`/api/league/${league}/roster-center?view=matchup-context&week=${requestedWeek}`,force).catch(()=>({}))]);if(week!==requestedWeek)return;context=c;publishHome(rows,c,requestedWeek);const pairs=new Map();for(const r of rows){const key=r.matchup_id??`bye-${r.roster_id}`;if(!pairs.has(key))pairs.set(key,[]);pairs.get(key).push(r);}
 root.innerHTML=`<div class="matchup-toolbar"><label>Week <select id="matchup-week">${Array.from({length:18},(_,i)=>`<option value="${i+1}" ${i+1===week?'selected':''}>${i+1}</option>`).join('')}</select></label><span>${esc(season)} · Updated ${new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</span></div>${!context.scheduleAvailable?'<p class="history-note">Game status unavailable</p>':''}<div class="matchup-board">${[...pairs.entries()].map(([key,pair])=>card(pair,key)).join('')||'<p>No matchups scheduled.</p>'}</div>`;
 root.querySelector('select').addEventListener('change',e=>{week=Number(e.target.value);open.clear();load();});root.querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)open.add(d.dataset.matchupKey);else open.delete(d.dataset.matchupKey);}));root.querySelectorAll('img').forEach(img=>img.addEventListener('error',()=>img.style.visibility='hidden',{once:true}));
 }catch{if(!bundle||requestedWeek===currentWeek){window.DCCMatchupStale=true;dispatchEvent(new Event('dcc:matchup'));}root.innerHTML='<p class="notice">Matchup scores are unavailable. Try refreshing.</p>';}finally{loading=false;button.disabled=false;if(requestedWeek!=null&&week!==requestedWeek)load();}}
