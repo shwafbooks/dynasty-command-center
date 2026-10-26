@@ -19,7 +19,7 @@ export function buildHomeDashboard({teams=[],rosterId,power,production,evidence,
    if(otherRows.length===1&&opponent){
     const players=new Map(teams.flatMap(t=>[...(t.starters||[]),...(t.bench||[]),...(t.ir||[])]).map(p=>[String(p.id),p]));
     const context=matchup.context||{},odds=estimateWinChance(own,other,players,context),states=[own,other].flatMap(r=>(r.starters||[]).map(id=>context.games?.[alias(players.get(String(id))?.nflTeam)]?.state));
-    const phase=odds?.final?'final':states.includes('playing')?'playing':states.some(s=>s==='upcoming')?'upcoming':'unknown';
+    const phase=odds?.final?'final':(states.includes('playing')||[own,other].some(row=>Number.isFinite(row.points)&&row.points!==0))?'playing':states.some(s=>s==='upcoming')?'upcoming':'unknown';
     const actual=phase==='playing'||phase==='final'||(own.starters_points||[]).some(p=>Number.isFinite(p)&&p!==0);
     const starters=(own.starters||[]).map((id,i)=>{const player=players.get(String(id));if(!player)return null;return {...player,value:actual?own.starters_points?.[i]:context.projections?.[String(id)]};}).filter(Boolean);
     const featured=starters.filter(p=>Number.isFinite(p.value)).sort((a,b)=>b.value-a.value).slice(0,3);

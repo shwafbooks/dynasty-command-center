@@ -18,3 +18,5 @@ const before=JSON.stringify(match);buildHomeDashboard({teams,rosterId:1,matchup:
 console.log('Home dashboard: selected franchise, current-week isolation, projected vs actual points, final odds, missing data, relevant needs and duplicate matchups passed.');
 const race={week:7,teams:[{rosterId:1,division:1,remaining:[{week:7,opponent:{rosterId:2,seed:2}},{week:12,opponent:{rosterId:3,seed:1}}]},{rosterId:3,division:1,divisionLeader:true}]};
 model=buildHomeDashboard({teams,rosterId:1,race});assert.equal(model.raceGame.week,12);assert.equal(model.raceGame.label,'DIVISION RIVAL');
+
+const betweenGames=structuredClone(match);betweenGames.rows[0].points=12;betweenGames.rows[0].starters_points=[12];model=buildHomeDashboard({teams,rosterId:1,matchup:betweenGames});assert.equal(model.game.phase,'playing');assert.equal(model.game.featuredMode,'points');
