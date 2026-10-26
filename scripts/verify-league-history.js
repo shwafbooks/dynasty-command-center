@@ -16,3 +16,14 @@ const incomplete=structuredClone(fixture);incomplete[1].winners=incomplete[1].wi
 const renamed=structuredClone(fixture);renamed[2].users.forEach(u=>u.display_name='Changed name');assert.equal(buildLeagueHistory(renamed).career.length,10);
 let calls=0;const partial=await fetchLeagueHistory('current',async p=>{calls++;if(p==='/league/current')return {...fixture[0].league,league_id:'current',previous_league_id:'missing'};if(p==='/league/missing')throw new Error();if(p.endsWith('/rosters'))return fixture[0].rosters;if(p.endsWith('/users'))return fixture[0].users;return [];});assert.equal(partial.warnings.length,1);assert.equal(partial.seasons.length,1);
 console.log('League history: podiums, placements, decimal points, career identity, payouts, partial failures passed.');
+const scored=structuredClone(fixture),season=scored.find(s=>s.league.season==='2025'),final=season.winners.find(g=>g.p===1);
+season.championshipRows=[{roster_id:final.w,matchup_id:7,points:141.82},{roster_id:final.l,matchup_id:7,points:130.11}];
+let title=buildLeagueHistory(scored).seasons.find(s=>s.year==='2025').championship;
+assert.equal(title.week,17);assert.equal(title.margin,11.71);assert.equal(title.champion.manager,'stuffy229');assert.equal(title.runnerUp.manager,'shwaf');
+season.championshipRows[1].matchup_id=8;assert.equal(buildLeagueHistory(scored).seasons.find(s=>s.year==='2025').championship.championPoints,null);
+season.championshipRows[1].matchup_id=7;season.championshipRows[0].custom_points=150;assert.equal(buildLeagueHistory(scored).seasons.find(s=>s.year==='2025').championship.championPoints,150);
+season.championshipRows[0].custom_points=null;season.championshipRows[0].points=0;assert.equal(buildLeagueHistory(scored).seasons.find(s=>s.year==='2025').championship.margin,null);
+assert.equal(data.seasons.find(s=>s.year==='2026').championship,null);
+let finalFetched=false;const archive=await fetchLeagueHistory('historic',async p=>{if(p==='/league/historic')return {...season.league,league_id:'historic',previous_league_id:null};if(p.endsWith('/rosters'))return season.rosters;if(p.endsWith('/users'))return season.users;if(p.endsWith('/winners_bracket'))return season.winners;if(p.endsWith('/losers_bracket'))return season.losers;if(p.endsWith('/matchups/17')){finalFetched=true;throw Error('Score unavailable');}throw Error('Unexpected request');});
+assert(finalFetched);assert.equal(archive.completedSeasons,1);assert.equal(archive.seasons[0].championship.championPoints,null);
+console.log('Championship plaques: verified finalists, score pairing, decimal margin, commissioner scores, active-season exclusion and score-fetch recovery passed.');
