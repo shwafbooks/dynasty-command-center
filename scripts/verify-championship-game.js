@@ -15,3 +15,7 @@ g=buildChampionshipGame({...left,starters:['a','b','0'],starters_points:[30,20,0
 g=buildChampionshipGame({...left,starters_points:undefined,players_points:{a:30,b:20,c:10,bench:99}},right,slots,{});assert(g.verified);assert.equal(g.mvps[0].name,'Player #a');assert.equal(g.championLineup.length,3);
 const before=JSON.stringify(left);buildChampionshipGame(left,right,slots,players);assert.equal(JSON.stringify(left),before);
 console.log('Championship breakdown: historical starter isolation, scoring reconciliation, tied MVPs/edges, negatives, empty slots, missing metadata and commissioner adjustments passed.');
+const {readFileSync}=await import('node:fs');
+const finals=JSON.parse(readFileSync(new URL('./fixtures/championship-games.json',import.meta.url)));
+for(const final of finals){const game=buildChampionshipGame(final.champion,final.runnerUp,final.positions,final.players);assert(game.verified,final.year);assert.equal(game.championLineup.length,9);assert.equal(game.runnerUpLineup.length,9);assert.equal(game.mvps[0].id,final.expected.mvp);assert.equal(game.mvps[0].points,final.expected.points);assert.equal(game.biggestEdges[0].difference,final.expected.edge);}
+console.log('2024 and 2025 live final snapshots: both nine-player starting lineups reconcile, MVPs and slot edges verified.');

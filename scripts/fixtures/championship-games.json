@@ -1,0 +1,319 @@
+[
+  {
+    "year": "2025",
+    "positions": [
+      "QB",
+      "RB",
+      "RB",
+      "WR",
+      "WR",
+      "TE",
+      "FLEX",
+      "FLEX",
+      "SUPER_FLEX",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN"
+    ],
+    "champion": {
+      "starters": [
+        "3294",
+        "11584",
+        "9509",
+        "9997",
+        "9493",
+        "8110",
+        "9224",
+        "4866",
+        "12500"
+      ],
+      "starters_points": [
+        22.68,
+        8.3,
+        39.9,
+        13,
+        15.7,
+        7.6,
+        29.1,
+        6.8,
+        15.78
+      ],
+      "points": 158.86,
+      "custom_points": null
+    },
+    "runnerUp": {
+      "starters": [
+        "11564",
+        "8138",
+        "12527",
+        "9488",
+        "8137",
+        "3214",
+        "5859",
+        "5045",
+        "4943"
+      ],
+      "starters_points": [
+        32.44,
+        8.7,
+        9.3,
+        16.2,
+        11.8,
+        13.9,
+        11.8,
+        8,
+        7.08
+      ],
+      "points": 119.22,
+      "custom_points": null
+    },
+    "players": {
+      "3214": {
+        "full_name": "Hunter Henry",
+        "position": "TE"
+      },
+      "3294": {
+        "full_name": "Dak Prescott",
+        "position": "QB"
+      },
+      "4866": {
+        "full_name": "Saquon Barkley",
+        "position": "RB"
+      },
+      "4943": {
+        "full_name": "Sam Darnold",
+        "position": "QB"
+      },
+      "5045": {
+        "full_name": "Courtland Sutton",
+        "position": "WR"
+      },
+      "5859": {
+        "full_name": "A.J. Brown",
+        "position": "WR"
+      },
+      "8110": {
+        "full_name": "Jake Ferguson",
+        "position": "TE"
+      },
+      "8137": {
+        "full_name": "George Pickens",
+        "position": "WR"
+      },
+      "8138": {
+        "full_name": "James Cook III",
+        "position": "RB"
+      },
+      "9224": {
+        "full_name": "Chase Brown",
+        "position": "RB"
+      },
+      "9488": {
+        "full_name": "Jaxon Smith-Njigba",
+        "position": "WR"
+      },
+      "9493": {
+        "full_name": "Puka Nacua",
+        "position": "WR"
+      },
+      "9509": {
+        "full_name": "Bijan Robinson",
+        "position": "RB"
+      },
+      "9997": {
+        "full_name": "Zay Flowers",
+        "position": "WR"
+      },
+      "11564": {
+        "full_name": "Drake Maye",
+        "position": "QB"
+      },
+      "11584": {
+        "full_name": "Bucky Irving",
+        "position": "RB"
+      },
+      "12500": {
+        "full_name": "Quinn Ewers",
+        "position": "QB"
+      },
+      "12527": {
+        "full_name": "Ashton Jeanty",
+        "position": "RB"
+      }
+    },
+    "expected": {
+      "mvp": "9509",
+      "points": 39.9,
+      "edge": 30.6
+    }
+  },
+  {
+    "year": "2024",
+    "positions": [
+      "QB",
+      "RB",
+      "RB",
+      "WR",
+      "WR",
+      "TE",
+      "FLEX",
+      "FLEX",
+      "SUPER_FLEX",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN",
+      "BN"
+    ],
+    "champion": {
+      "starters": [
+        "4046",
+        "3198",
+        "9221",
+        "5045",
+        "8137",
+        "8130",
+        "5859",
+        "8138",
+        "4943"
+      ],
+      "starters_points": [
+        26,
+        24.5,
+        26.3,
+        16.5,
+        8,
+        30.3,
+        12.6,
+        11.3,
+        25.78
+      ],
+      "points": 181.28,
+      "custom_points": null
+    },
+    "runnerUp": {
+      "starters": [
+        "11566",
+        "4866",
+        "9509",
+        "9997",
+        "6801",
+        "8110",
+        "9226",
+        "9224",
+        "11584"
+      ],
+      "starters_points": [
+        32.78,
+        18.9,
+        24.8,
+        5.1,
+        40.1,
+        2.8,
+        5.8,
+        13.1,
+        23
+      ],
+      "points": 166.38,
+      "custom_points": null
+    },
+    "players": {
+      "3198": {
+        "full_name": "Derrick Henry",
+        "position": "RB"
+      },
+      "4046": {
+        "full_name": "Patrick Mahomes",
+        "position": "QB"
+      },
+      "4866": {
+        "full_name": "Saquon Barkley",
+        "position": "RB"
+      },
+      "4943": {
+        "full_name": "Sam Darnold",
+        "position": "QB"
+      },
+      "5045": {
+        "full_name": "Courtland Sutton",
+        "position": "WR"
+      },
+      "5859": {
+        "full_name": "A.J. Brown",
+        "position": "WR"
+      },
+      "6801": {
+        "full_name": "Tee Higgins",
+        "position": "WR"
+      },
+      "8110": {
+        "full_name": "Jake Ferguson",
+        "position": "TE"
+      },
+      "8130": {
+        "full_name": "Trey McBride",
+        "position": "TE"
+      },
+      "8137": {
+        "full_name": "George Pickens",
+        "position": "WR"
+      },
+      "8138": {
+        "full_name": "James Cook III",
+        "position": "RB"
+      },
+      "9221": {
+        "full_name": "Jahmyr Gibbs",
+        "position": "RB"
+      },
+      "9224": {
+        "full_name": "Chase Brown",
+        "position": "RB"
+      },
+      "9226": {
+        "full_name": "De'Von Achane",
+        "position": "RB"
+      },
+      "9509": {
+        "full_name": "Bijan Robinson",
+        "position": "RB"
+      },
+      "9997": {
+        "full_name": "Zay Flowers",
+        "position": "WR"
+      },
+      "11566": {
+        "full_name": "Jayden Daniels",
+        "position": "QB"
+      },
+      "11584": {
+        "full_name": "Bucky Irving",
+        "position": "RB"
+      }
+    },
+    "expected": {
+      "mvp": "8130",
+      "points": 30.3,
+      "edge": 27.5
+    }
+  }
+]
