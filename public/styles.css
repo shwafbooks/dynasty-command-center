@@ -185,3 +185,6 @@
 .roster-grid,.team-accordion,.team-accordion__body,.franchise-profile,.franchise-context>div{min-width:0}
 .franchise-context,.franchise-matchup-scoreboard{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:800px){.franchise-context{grid-template-columns:minmax(0,1fr)}}
+
+.franchise-selector>span{min-width:0;overflow-wrap:anywhere}
+@media(max-width:600px){.home-status-rail small{font-size:9px}.home-moves .wire-movement>b{font-size:10px}}
