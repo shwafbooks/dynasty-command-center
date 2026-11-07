@@ -1,6 +1,6 @@
 import {estimateWinChance} from './win-chance.js';
 (()=>{
-const root=document.querySelector('#matchup-workspace'),button=document.querySelector('#matchup-refresh'),league='1389344338340761600';
+const root=document.querySelector('#matchup-workspace'),button=document.querySelector('#matchup-refresh'),league=window.DCCLeague.id;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let week,season,bundle,loading=false,context={},open=new Set(),currentWeek=null,currentSeason=null,homeLoading=false;
 const get=(url,force=false)=>window.DCCData.json(url,{force});

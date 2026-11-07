@@ -1,3 +1,4 @@
+import {validateLeague} from './public/league-config.js';
 import http from 'node:http';
 import {fetchTradeMarkets} from './lib/trade-markets.js';
 import {fetchPlayoffRace} from './lib/playoff-race.js';
@@ -459,7 +460,7 @@ function tradeDossier(aPlayers,bPlayers,giveIds,getIds, names={a:'Team A',b:'Tea
 
 async function leagueBundle(id) {
   const [league, rosters, users] = await Promise.all([sleeper(`/league/${id}`,300000),sleeper(`/league/${id}/rosters`,60000),sleeper(`/league/${id}/users`,60000)]);
-  return {league,rosters,users,syncedAt:new Date().toISOString()};
+  validateLeague(league);return {league,rosters,users,syncedAt:new Date().toISOString()};
 }
 
 // This is intentionally a presentation-shaped endpoint rather than an analytics
@@ -515,6 +516,8 @@ function rosterCenter(bundle, players, seasonStats = {}) {
       name: bundle.league.name,
       season: bundle.league.season,
       totalRosters: bundle.league.total_rosters,
+      status: bundle.league.status,
+      playoffWeekStart: bundle.league.settings?.playoff_week_start,
       rosterPositions: bundle.league.roster_positions || [],
       scoring: bundle.league.scoring_settings || {}
     },
@@ -570,6 +573,7 @@ async function route(req, res, url) {
     if (parts[0]==='api' && parts[1]==='league' && parts[2]) {
       const id=decodeURIComponent(parts[2]) || DEFAULT_LEAGUE_ID;
       if(parts.length===3) return json(res,200,await leagueBundle(id));
+      if(parts[3]==='roster-center' && url.searchParams.get('view')==='connect'){try{const league=await sleeper(`/league/${id}`,300000);return json(res,200,{league:validateLeague(league)});}catch(e){return json(res,400,{error:e.message});}}
       if(parts[3]==='roster-center' && url.searchParams.get('view')==='dynasty-context') {const key=`trade-markets:${id}`,hit=cache.get(key);if(hit&&Date.now()-hit.at<600000)return json(res,200,hit.data);const [bundle,players]=await Promise.all([leagueBundle(id),sleeper('/players/nfl',DAY)]),data=await fetchTradeMarkets(rosterCenter(bundle,players).teams,bundle.league,sleeper);if(data.sources.length)cache.set(key,{at:Date.now(),data});return json(res,200,data);}
       if(parts[3]==='roster-center' && url.searchParams.get('view')==='trade-context') {const bundle=await leagueBundle(id),state=await sleeper('/state/nfl',60000),week=Number(state.week),season=bundle.league.season;const ready=String(state.season)===String(season)&&state.season_type==='regular'&&week>=1&&week<=18;const context=ready?await fetchMatchupContext(season,week,bundle.league.scoring_settings):{games:{},projections:{},injuries:{}};return json(res,200,{...context,season,week:ready?week:null,slots:(bundle.league.roster_positions||[]).filter(s=>s!=='BN'),rosterLimit:(bundle.league.roster_positions||[]).length});}
       if(parts[3]==='roster-center' && url.searchParams.get('view')==='playoff-race') return json(res,200,await fetchPlayoffRace(id,sleeper));

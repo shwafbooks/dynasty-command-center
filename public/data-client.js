@@ -8,7 +8,7 @@
   if(pending.has(key))return pending.get(key);
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   const request=Promise.resolve().then(async()=>{
-   try{const response=await fetch(key,{cache:'no-store',signal:controller.signal});if(!response.ok){const error=Error(`Data unavailable (${response.status})`);error.status=response.status;throw error;}const data=await response.json();cache.delete(key);cache.set(key,{at:Date.now(),data});while(cache.size>limit)cache.delete(cache.keys().next().value);return data;}
+   try{const response=await fetch(key,{cache:'no-store',signal:controller.signal});if(!response.ok){const error=Error(`Data unavailable (${response.status})`);error.status=response.status;try{const body=await response.json();if(typeof body.error==='string')error.message=body.error.slice(0,250);}catch{}throw error;}const data=await response.json();cache.delete(key);cache.set(key,{at:Date.now(),data});while(cache.size>limit)cache.delete(cache.keys().next().value);return data;}
    catch(error){if(controller.signal.aborted)throw Error('The data source took too long. Please retry.');throw error;}
    finally{clearTimeout(timer);pending.delete(key);}
   });pending.set(key,request);return request;

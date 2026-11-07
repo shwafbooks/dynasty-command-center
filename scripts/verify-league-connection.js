@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
+import {parseLeagueId,validateLeague,DEFAULT_LEAGUE} from '../public/league-config.js';import {buildLeagueHistory} from '../lib/league-history.js';
+for(const link of [DEFAULT_LEAGUE,`https://sleeper.com/leagues/${DEFAULT_LEAGUE}/team`,`https://sleeper.app/leagues/${DEFAULT_LEAGUE}`])assert.equal(parseLeagueId(link),DEFAULT_LEAGUE);
+for(const link of ['1','abc',`https://evil.example/leagues/${DEFAULT_LEAGUE}`,`https://sleeper.com.evil.example/leagues/${DEFAULT_LEAGUE}`,'https://sleeper.com/i/abc'])assert.throws(()=>parseLeagueId(link));
+const league={league_id:'999999999999999999',sport:'nfl',name:'Other league',season:'2026',total_rosters:12,roster_positions:['QB','RB','RB','WR','WR','WR','TE','FLEX','SUPER_FLEX','BN'],scoring_settings:{rec:.5},settings:{type:2,playoff_teams:8}};
+const c=validateLeague(league);assert.equal(c.teams,12);assert.equal(c.ppr,.5);assert.equal(c.playoffTeams,8);assert.equal(c.slots.length,9);
+for(const bad of [{...league,sport:'nba'},{...league,settings:{best_ball:1}},{...league,roster_positions:['QB','IDP_FLEX']},{...league,roster_positions:[]},null])assert.throws(()=>validateLeague(bad));
+const source=JSON.parse(fs.readFileSync(new URL('./fixtures/league-history.json',import.meta.url)));const history=buildLeagueHistory(source,[],{},null);assert(!history.financialsAvailable);assert.equal(history.totals.buyIns,null);assert(history.career.every(c=>c.net===null&&c.winnings===null));assert.equal(history.completedSeasons,2);
+const moduleSource=fs.readFileSync(new URL('../public/league.js',import.meta.url),'utf8');
+const node=()=>({innerHTML:'',textContent:'',disabled:false,hidden:false,setAttribute(){},append(){},addEventListener(){},showModal(){},querySelector(){return node();},querySelectorAll(){return[];},elements:{league:{addEventListener(){}}}});
+function boot(search,saved){const context={window:{},location:{search},localStorage:{getItem(){return saved;}},URLSearchParams,document:{createElement:node,querySelector:node,body:node()}};vm.runInNewContext(moduleSource,context);return context.window.DCCLeague;}
+assert.equal(boot('',null).id,DEFAULT_LEAGUE);assert.equal(boot('',league.league_id).id,league.league_id);assert.equal(boot('?league='+DEFAULT_LEAGUE,league.league_id).id,DEFAULT_LEAGUE);assert.notEqual(boot('',league.league_id).key('dcc-saved-trades'),boot('',null).key('dcc-saved-trades'));
+console.log('League connection: link parsing, format validation, 12-team half-PPR settings, isolated preferences, URL precedence and unknown payouts passed.');
